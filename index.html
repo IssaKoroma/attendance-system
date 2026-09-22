@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imatt College LIVE</title>
+<style>
+body{font-family:Arial;background:#f4f6fb;margin:0;padding:12px}
+.card{background:#fff;border-radius:15px;padding:16px;max-width:750px;margin:auto;box-shadow:0 5px 15px #0001}
+h2{text-align:center;margin:0;color:#1e40af}.live{text-align:center;color:#16a34a;font-weight:bold;font-size:13px;margin:5px 0}
+.yearMenu{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+.yearBtn{padding:30px 10px;border-radius:15px;border:none;font-weight:bold;font-size:16px;color:#fff;cursor:pointer}
+.y1{background:#3b82f6}.y2{background:#10b981}.y3{background:#f59e0b}.y4{background:#8b5cf6}
+input,select{width:100%;padding:12px;margin:5px 0;border-radius:10px;border:1px solid #ddd;box-sizing:border-box;font-size:15px}
+button.main{width:100%;padding:13px;border:none;border-radius:10px;background:#1e40af;color:#fff;font-weight:bold;margin-top:7px;font-size:15px}
+.back{width:auto;background:#6b7280;padding:8px 15px;font-size:13px}
+.countBox{display:flex;justify-content:space-around;background:#eef2ff;padding:12px;border-radius:12px;font-weight:bold;text-align:center;margin:10px 0}
+.countBox span{font-size:20px}.presentC{color:#16a34a}.absentC{color:#dc2626}.totalC{color:#1e40af}
+.wrap{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
+th,td{border-bottom:1px solid #eee;padding:9px;text-align:center} th{background:#1e40af;color:#fff}
+.status{padding:6px 12px;border-radius:20px;font-weight:bold;cursor:pointer;display:inline-block}
+.status.Present{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.status.Absent{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.page{display:none}.page.active{display:block}
+.titleYear{text-align:center;font-size:20px;font-weight:bold;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Imatt College LIVE</h2>
+<div class="live">● LIVE - Everybody sees same list</div>
+
+<!-- HOME PAGE - YEAR SELECTION -->
+<div id="homePage" class="page active">
+<div style="text-align:center;margin:10px 0;color:#555">Select Your Year</div>
+<div class="yearMenu">
+<button class="yearBtn y1" onclick="openYear('Year 1')">Year 1</button>
+<button class="yearBtn y2" onclick="openYear('Year 2')">Year 2</button>
+<button class="yearBtn y3" onclick="openYear('Year 3')">Year 3</button>
+<button class="yearBtn y4" onclick="openYear('Year 4 - Final Year')">Final Year</button>
+</div>
+<button class="main" onclick="openYear('All')" style="background:#111827">View All Years (Admin)</button>
+</div>
+
+<!-- ATTENDANCE PAGE -->
+<div id="attPage" class="page">
+<button class="main back" onclick="goHome()">← Back to Years</button>
+<div id="titleYear" class="titleYear">Year 1</div>
+
+<input id="sid" placeholder="Student ID">
+<input id="sname" placeholder="Student Full Name">
+<div id="yearDisplay" style="background:#eef2ff;padding:12px;border-radius:10px;text-align:center;font-weight:bold;color:#1e40af;margin:5px 0"></div>
+<input id="course" placeholder="Module e.g. Critical Thinking">
+<select id="status"><option>Present</option><option>Absent</option></select>
+<button class="main" onclick="add()">Mark Attendance</button>
+<button class="main" onclick="exportCSV()" style="background:#16a34a">Export Excel for This Year</button>
+
+<div class="countBox">
+<div>Present<br><span class="presentC" id="pCount">0</span></div>
+<div>Absent<br><span class="absentC" id="aCount">0</span></div>
+<div>Total<br><span class="totalC" id="tCount">0</span></div>
+</div>
+
+<div class="wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Module</th><th>Status</th><th>Time</th><th>Del</th></tr></thead><tbody id="list"></tbody></table></div>
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "REPLACE_WITH_YOUR_REAL_KEY",
+  authDomain: "imatt-attendance.firebaseapp.com",
+  databaseURL: "https://imatt-attendance-default-rtdb.firebaseio.com",
+  projectId: "imatt-attendance",
+  storageBucket: "imatt-attendance.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abc123"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const dbRef = ref(db, 'attendance');
+
+let allData = {};
+let curYear = 'Year 1';
+
+window.openYear = (y)=>{
+ curYear=y;
+ document.getElementById('homePage').classList.remove('active');
+ document.getElementById('attPage').classList.add('active');
+ document.getElementById('titleYear').innerText = y==='All'?'All Years - Admin View': y.replace(' - Final Year','') + ' - Attendance';
+ document.getElementById('yearDisplay').innerText = y==='All'?'Showing: All Years': 'Year: ' + y.replace(' - Final Year',' (Final Year)');
+ render();
+}
+
+window.goHome = ()=>{
+ document.getElementById('attPage').classList.remove('active');
+ document.getElementById('homePage').classList.add('active');
+}
+
+window.add = ()=>{
+ let id=sid.value.trim(), name=sname.value.trim(), mod=course.value.trim(), st=status.value;
+ let yr = curYear==='All'? 'Year 1' : curYear;
+ if(curYear==='All'){ yr = prompt('Enter Year: Year 1, Year 2, Year 3, Year 4 - Final Year','Year 1'); }
+ if(!id||!name||!mod){alert('Fill ID, Name, Module');return}
+ push(dbRef, {id,name,year:yr,module:mod,status:st,time:new Date().toLocaleTimeString(), date:new Date().toDateString()});
+ sid.value=''; sname.value=''; course.value='';
+}
+
+window.del = (k)=>{ if(confirm('Delete?')) remove(ref(db,'attendance/'+k)); }
+window.toggle = (k,curr)=>{ let ns=curr==='Present'?'Absent':'Present'; update(ref(db,'attendance/'+k),{status:ns,time:new Date().toLocaleTimeString()}); }
+
+onValue(dbRef, (snap)=>{
+ allData = snap.val()||{};
+ render();
+});
+
+function render(){
+ list.innerHTML=''; let p=0,a=0,t=0;
+ Object.keys(allData).forEach(k=>{
+   let s=allData[k];
+   if(curYear!=='All' && s.year!==curYear) return;
+   if(s.status==='Present') p++; else a++; t++;
+   list.innerHTML+=`<tr><td>${s.id}</td><td style="text-align:left">${s.name}</td><td style="text-align:left">${s.module}</td><td><span class="status ${s.status}" onclick="toggle('${k}','${s.status}')">${s.status}</span></td><td>${s.time}</td><td><button onclick="del('${k}')" style="width:auto;padding:5px 10px;background:#ef4444;border:none;color:#fff;border-radius:6px">X</button></td></tr>`;
+ });
+ pCount.innerText=p; aCount.innerText=a; tCount.innerText=t;
+}
+
+window.exportCSV = ()=>{
+ let csv="Year,ID,Name,Module,Status,Time,Date\n";
+ Object.values(allData).forEach(s=>{
+   if(curYear!=='All' && s.year!==curYear) return;
+   csv+=`"${s.year}","${s.id}","${s.name}","${s.module}","${s.status}","${s.time}","${s.date}"\n`;
+ });
+ let a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download="Imatt_"+curYear+"_"+new Date().toDateString()+".csv"; a.click();
+}
+</script>
+</body>
+</html>
