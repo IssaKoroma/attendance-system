@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imatt College - LIVE Attendance</title>
+<style>
+body{font-family:Arial;background:#f4f6fb;margin:0;padding:12px}
+.card{background:#fff;border-radius:15px;padding:16px;max-width:750px;margin:auto;box-shadow:0 5px 15px #0001}
+h2{text-align:center;margin:0;color:#1e40af}.sub{text-align:center;color:#666;font-size:12px;margin-bottom:6px}
+input,select{width:100%;padding:12px;margin:5px 0;border-radius:10px;border:1px solid #ddd;box-sizing:border-box;font-size:15px}
+button{width:100%;padding:13px;border:none;border-radius:10px;background:#1e40af;color:#fff;font-weight:bold;margin-top:7px;font-size:15px}
+.filters{display:flex;gap:5px;margin-top:10px}.filters button{background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe}
+.filters button.active{background:#1e40af;color:#fff}
+.countBox{display:flex;justify-content:space-around;margin-top:12px;background:#eef2ff;padding:12px;border-radius:12px;font-weight:bold;text-align:center}
+.countBox span{font-size:18px}.presentC{color:#16a34a}.absentC{color:#dc2626}.totalC{color:#1e40af}
+.wrap{overflow-x:auto} table{width:100%;margin-top:12px;border-collapse:collapse;font-size:13px;min-width:650px}
+th,td{border-bottom:1px solid #eee;padding:9px;text-align:center} th{background:#1e40af;color:#fff}
+.statusBtn{font-weight:bold;color:#1e40af;cursor:pointer;padding:6px 12px;border-radius:20px;border:1.5px solid #1e40af;background:#dbeafe;display:inline-block}
+.statusBtn.absent{color:#991b1b;border-color:#991b1b;background:#fee2e2}
+.live{color:#16a34a;text-align:center;font-size:12px;margin-top:5px;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Imatt College LIVE</h2>
+<div class="sub" id="date"></div>
+<div class="live">● LIVE - Everybody sees same list</div>
+
+<input id="sid" placeholder="Student ID e.g. 1727">
+<input id="sname" placeholder="Student Full Name">
+<select id="year"><option>Year 1</option><option>Year 2</option><option>Year 3</option><option>Year 4</option></select>
+<input id="course" placeholder="Module e.g. Critical Thinking">
+<select id="defaultStatus"><option>Present</option><option>Absent</option></select>
+
+<button onclick="addStudent()">Mark Attendance</button>
+<button onclick="downloadCSV()" style="background:#16a34a">Export to Excel</button>
+
+<div class="filters">
+<button onclick="setFilter('All')" id="fAll" class="active">All</button>
+<button onclick="setFilter('Year 1')" id="f1">Year 1</button>
+<button onclick="setFilter('Year 2')" id="f2">Year 2</button>
+<button onclick="setFilter('Year 3')" id="f3">Year 3</button>
+<button onclick="setFilter('Year 4')" id="f4">Year 4</button>
+</div>
+
+<div class="countBox">
+<div>Present<br><span class="presentC" id="presentCount">0</span></div>
+<div>Absent<br><span class="absentC" id="absentCount">0</span></div>
+<div>Total<br><span class="totalC" id="totalCount">0</span></div>
+</div>
+
+<div class="wrap">
+<table><thead><tr><th>Year</th><th>ID</th><th>Name</th><th>Module</th><th>Status</th><th>Time</th><th>Del</th></tr></thead><tbody id="list"></tbody></table>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// PASTE YOUR FIREBASE CONFIG HERE - REPLACE THIS
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_AUTH_DOMAIN",
+  databaseURL: "PASTE_YOUR_DATABASE_URL",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_BUCKET",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId: "PASTE_YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const dbRef = ref(db, 'attendance');
+
+document.getElementById('date').innerText=new Date().toDateString();
+let allData = {}; let currentFilter = 'All';
+
+window.setFilter = (f) => {
+ currentFilter = f;
+ document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('active'));
+ if(f==='All') fAll.classList.add('active'); if(f==='Year 1') f1.classList.add('active'); if(f==='Year 2') f2.classList.add('active'); if(f==='Year 3') f3.classList.add('active'); if(f==='Year 4') f4.classList.add('active');
+ render();
+}
+
+window.addStudent = () => {
+ let id=sid.value.trim(), name=sname.value.trim(), yr=year.value, mod=course.value.trim(), st=defaultStatus.value;
+ if(!id||!name||!mod){alert("Fill ID, Name, Module");return}
+ push(dbRef, {id,name,year:yr,module:mod,status:st,time:new Date().toLocaleTimeString(), date:new Date().toDateString()});
+ sid.value=""; sname.value=""; course.value="";
+}
+
+window.toggleStatus = (key, curr) => {
+ let newStatus = curr==="Present"?"Absent":"Present";
+ update(ref(db, 'attendance/'+key), {status:newStatus, time:new Date().toLocaleTimeString()});
+}
+window.del = (key) => { if(confirm("Delete?")) remove(ref(db, 'attendance/'+key)); }
+
+onValue(dbRef, (snap)=>{
+ allData = snap.val() || {};
+ render();
+});
+
+function render(){
+ list.innerHTML=""; let present=0, absent=0, total=0;
+ Object.keys(allData).forEach(key=>{
+   let s = allData[key];
+   if(currentFilter!=='All' && s.year!==currentFilter) return;
+   if(s.status==="Present") present++; else absent++; total++;
+   let btnClass = s.status==="Present"?"statusBtn":"statusBtn absent";
+   list.innerHTML+=`<tr><td>${s.year}</td><td>${s.id}</td><td style="text-align:left">${s.name}</td><td style="text-align:left">${s.module}</td><td><span class="${btnClass}" onclick="toggleStatus('${key}','${s.status}')">${s.status}</span></td><td>${s.time}</td><td><button onclick="del('${key}')" style="background:#ef4444;padding:6px 9px;width:auto">X</button></td></tr>`;
+ });
+ presentCount.innerText=present; absentCount.innerText=absent; totalCount.innerText=total;
+}
+
+window.downloadCSV = () => {
+ let csv="Year,ID,Name,Module,Status,Time,Date\n";
+ Object.values(allData).forEach(s=>{
+   if(currentFilter!=='All' && s.year!==currentFilter) return;
+   csv+=`"${s.year}","${s.id}","${s.name}","${s.module}","${s.status}","${s.time}","${s.date}"\n`;
+ });
+ let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download="Imatt_"+currentFilter+"_"+new Date().toDateString()+".csv";a.click();
+}
+</script>
+</body>
+</html>
