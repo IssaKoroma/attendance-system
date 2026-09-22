@@ -1,44 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>College Attendance System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>College Attendance</title>
 <style>
-body{font-family:Arial;padding:20px;background:#f4f6f9}
-.card{background:white;padding:20px;border-radius:10px;max-width:500px;margin:auto;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
-h2{text-align:center;color:#2c3e50}
-input,select,button{width:100%;padding:12px;margin:8px 0;border-radius:6px;border:1px solid #ccc}
-button{background:#27ae60;color:white;border:none;font-weight:bold}
-table{width:100%;margin-top:20px;border-collapse:collapse}
-th,td{border:1px solid #ddd;padding:8px;text-align:left}
-th{background:#2c3e50;color:white}
+body{background:#f1f5f9;display:flex;justify-content:center;padding:20px;font-family:Arial}
+.card{background:white;padding:20px;border-radius:15px;width:100%;max-width:400px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}
+h2{text-align:center;color:#1e293b}
+input,select,button{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box}
+button{border:none;color:white;font-weight:bold}
+#markBtn{background:#22c55e}
+#excelBtn{background:#2563eb}
+table{width:100%;margin-top:15px;border-collapse:collapse}
+th,td{border:1px solid #334155;padding:8px;text-align:left}
+th{background:#1e293b;color:white}
 </style>
 </head>
 <body>
 <div class="card">
 <h2>College Attendance System</h2>
 <input id="name" placeholder="Student Name">
-<select id="status">
-<option>Present</option>
-<option>Absent</option>
-<option>Late</option>
-</select>
-<button onclick="mark()">Mark Attendance</button>
-<table id="table">
-<tr><th>Name</th><th>Status</th><th>Time</th></tr>
-</table>
-<p style="text-align:center;margin-top:15px;font-size:13px">Built by Issa Koroma | Freetown, SL</p>
+<select id="status"><option>Present</option><option>Absent</option><option>Late</option></select>
+<button id="markBtn" onclick="mark()">Mark Attendance</button>
+<button id="excelBtn" onclick="exportExcel()">📥 Export to Excel</button>
+<table id="table"><tr><th>Name</th><th>Status</th><th>Time</th></tr></table>
+<p style="text-align:center;font-size:12px;margin-top:10px">Built by Issa Koroma | Freetown</p>
 </div>
 <script>
-function mark(){
-let n=document.getElementById('name').value;
-let s=document.getElementById('status').value;
-if(!n)return alert('Enter name');
-let t=new Date().toLocaleString();
-let row=`<tr><td>${n}</td><td>${s}</td><td>${t}</td></tr>`;
-document.getElementById('table').innerHTML+=row;
-document.getElementById('name').value='';
-}
+let records=JSON.parse(localStorage.getItem("att")||"[]");
+function render(){let t=document.getElementById("table");t.innerHTML="<tr><th>Name</th><th>Status</th><th>Time</th></tr>";records.forEach(r=>{t.innerHTML+=`<tr><td>${r.name}</td><td>${r.status}</td><td>${r.time}</td></tr>`})}
+function mark(){let n=document.getElementById("name").value;let s=document.getElementById("status").value;if(!n)return alert("Enter name");let time=new Date().toLocaleTimeString();records.push({name:n,status:s,time:time});localStorage.setItem("att",JSON.stringify(records));document.getElementById("name").value="";render()}
+function exportExcel(){if(records.length==0)return alert("No data");let csv="Name,Status,Time\n";records.forEach(r=>{csv+=r.name+","+r.status+","+r.time+"\n"});let b=new Blob([csv],{type:"text/csv"});let a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="Attendance.csv";a.click()}
+render();
 </script>
 </body>
 </html>
