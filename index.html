@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imatt College - Attendance</title>
+<style>
+body{font-family:Arial;background:#f4f6fb;margin:0;padding:12px}
+.card{background:#fff;border-radius:15px;padding:16px;max-width:520px;margin:auto;box-shadow:0 5px 15px #0001}
+h2{text-align:center;margin:0}.sub{text-align:center;color:#666;font-size:13px;margin-bottom:6px}
+input,select{width:100%;padding:11px;margin:5px 0;border-radius:10px;border:1px solid #ddd;box-sizing:border-box}
+button{width:100%;padding:12px;border:none;border-radius:10px;background:#1e40af;color:#fff;font-weight:bold;margin-top:6px}
+table{width:100%;margin-top:12px;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid #eee;padding:8px;text-align:center}
+th{background:#1e40af;color:#fff}
+.statusBtn{font-weight:bold;color:#1e40af;cursor:pointer;padding:6px 10px;border-radius:20px;border:1px solid #1e40af;background:#dbeafe;display:inline-block}
+.statusBtn.absent{color:#991b1b;border-color:#991b1b;background:#fee2e2}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Imatt College</h2>
+<div class="sub" id="date"></div>
+<div class="sub">By Issa Koroma - Lecturer Panel (No Password)</div>
+
+<input id="sid" placeholder="Student ID e.g. 1727">
+<input id="sname" placeholder="Student Name">
+<select id="year"><option>Year 1</option><option>Year 2</option><option>Year 3</option><option>Year 4</option></select>
+<input id="course" placeholder="Course/Module e.g. Operating System">
+<select id="defaultStatus"><option>Present</option><option>Absent</option></select>
+<button onclick="addStudent()">Mark Attendance</button>
+<button onclick="downloadCSV()" style="background:#16a34a">Export to Excel</button>
+<button onclick="clearAll()" style="background:#64748b">Clear All</button>
+
+<table><thead><tr><th>Year</th><th>Module</th><th>Status</th><th>Time</th><th>Del</th></tr></thead><tbody id="list"></tbody></table>
+<div style="text-align:center;margin-top:8px;font-size:12px;color:#666">Tip: Tap on <b>Present/Absent</b> to change status & time</div>
+</div>
+
+<script>
+document.getElementById('date').innerText=new Date().toDateString();
+let roster=JSON.parse(localStorage.getItem('imatt_roster_v3')||'[]');
+function save(){localStorage.setItem('imatt_roster_v3',JSON.stringify(roster)); render();}
+function addStudent(){
+ let id=sid.value.trim(), name=sname.value.trim(), yr=year.value, mod=course.value.trim(), st=defaultStatus.value;
+ if(!id||!name||!mod){alert("Fill ID, Name, Module");return}
+ roster.push({id,name,year:yr,module:mod,status:st,time: st==="Present"? new Date().toLocaleTimeString() : "-"});
+ save(); sid.value=""; sname.value=""; course.value="";
+}
+function render(){
+ list.innerHTML="";
+ roster.forEach((s,i)=>{
+   let btnClass = s.status==="Present"?"statusBtn":"statusBtn absent";
+   list.innerHTML+=`<tr><td>${s.year}</td><td>${s.module}<br><small>${s.name} (${s.id})</small></td><td><span class="${btnClass}" onclick="toggleStatus(${i})">${s.status}</span></td><td>${s.time}</td><td><button onclick="del(${i})" style="background:#ef4444;padding:5px 10px;width:auto">X</button></td></tr>`;
+ });
+}
+function toggleStatus(i){
+ if(roster[i].status==="Present"){roster[i].status="Absent"; roster[i].time="-";}
+ else {roster[i].status="Present"; roster[i].time=new Date().toLocaleTimeString();}
+ save();
+}
+function del(i){roster.splice(i,1);save();}
+function clearAll(){if(confirm("Clear all attendance?")){roster=[];save();}}
+function downloadCSV(){
+ let csv="Year,Module,Student ID,Name,Status,Time,Date\n";
+ roster.forEach(s=>{csv+=`${s.year},${s.module},${s.id},${s.name},${s.status},${s.time},${new Date().toDateString()}\n`;});
+ let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download="Imatt_"+new Date().toDateString()+".csv";a.click();
+}
+render();
+</script>
+</body>
+</html>
