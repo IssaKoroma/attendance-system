@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IMATT COLLEGE - Fixed</title>
+<style>
+body{font-family:Arial;background:#0f4c3a;margin:0;padding:10px}
+.card{background:#fff;border-radius:14px;padding:14px;max-width:850px;margin:10px auto}
+.header{text-align:center}
+.yearMenu{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.yearBtn{padding:18px;border:none;border-radius:12px;color:#fff;font-weight:bold;cursor:pointer}
+.y1{background:#1e40af}.y2{background:#059669}.y3{background:#d97706}.y4{background:#7c3aed}
+.deptBtn{background:#fff;color:#0f4c3a;border:2px solid #0f4c3a;padding:12px;border-radius:10px;font-weight:bold;cursor:pointer}
+button.main{width:100%;padding:11px;border:none;border-radius:8px;background:#0f4c3a;color:#fff;font-weight:bold;margin-top:6px;cursor:pointer}
+.page{display:none}.page.active{display:block}
+.count{display:flex;justify-content:space-around;background:#ecfdf5;padding:10px;border-radius:10px;font-weight:bold;margin:12px 0;border:1px solid #a7f3d0;text-align:center}
+.wrap{overflow-x:auto;border:1px solid #ddd;border-radius:8px;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:750px}
+th,td{padding:8px;border-bottom:1px solid #eee;text-align:center}
+th{background:#0f4c3a;color:#fff;position:sticky;top:0}
+.statusBtn{border:none;padding:5px 10px;border-radius:20px;color:#fff;font-weight:bold;cursor:pointer}
+.present{background:#16a34a}.absent{background:#dc2626}
+.editBtn{background:#fef3c7;border:1px dashed #d97706;padding:3px 6px;border-radius:5px;cursor:pointer}
+input,select{width:100%;padding:10px;margin:4px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="header"><h2 style="color:#0f4c3a;margin:5px">IMATT COLLEGE</h2><div style="color:#8b0000;font-size:11px;font-weight:bold;font-style:italic">Education is the Source of Human Progress</div></div>
+
+<div id="deptPage" class="page active">
+<div style="text-align:center;font-weight:bold;margin:14px 0">SELECT DEPARTMENT</div>
+<div class="yearMenu" id="deptList"></div>
+<div style="text-align:center;font-size:11px;font-weight:bold;margin-top:15px">This website built and Design by Issa Koroma year 2 student</div>
+</div>
+
+<div id="home" class="page">
+<button class="main" style="width:auto;background:#6b7280" onclick="goDept()">← Back to Departments</button>
+<div id="deptTitle" style="text-align:center;font-weight:bold;color:#8b0000;margin:10px 0"></div>
+<div style="text-align:center;font-weight:bold;margin:10px 0">SELECT YEAR</div>
+<div class="yearMenu">
+<button class="yearBtn y1" onclick="openY('Year 1')">Year 1</button>
+<button class="yearBtn y2" onclick="openY('Year 2')">Year 2</button>
+<button class="yearBtn y3" onclick="openY('Year 3')">Year 3</button>
+<button class="yearBtn y4" onclick="openY('Year 4')">Final Year</button>
+</div>
+<button class="main" style="background:#111827" onclick="openAdmin()">🔐 Admin View All - PIN 1234</button>
+<div style="text-align:center;font-size:11px;font-weight:bold;margin-top:10px">This website built and Design by Issa Koroma year 2 student</div>
+</div>
+
+<div id="att" class="page">
+<button class="main" style="width:auto;background:#6b7280" onclick="goHome()">← Back to Years</button>
+<div id="tYear" style="text-align:center;font-weight:bold;margin:10px 0;color:#0f4c3a"></div>
+<input id="sid" placeholder="Student ID e.g. 1727">
+<input id="sname" placeholder="Full Name">
+<input id="ccourse" placeholder="Module">
+<select id="sstat"><option>Present</option><option>Absent</option></select>
+<button class="main" onclick="add()">✔ Mark Attendance</button>
+<button class="main" style="background:#16a34a" onclick="exp()">📊 Export Excel</button>
+
+<div class="count">
+<div>Present<br><span id="pC">0</span></div>
+<div>Absent<br><span id="aC">0</span></div>
+<div>Total<br><span id="tC">0</span></div>
+</div>
+<div style="font-size:11px;color:#555;text-align:center">Tap Module to edit • Tap Status to change + Time updates • Scroll table left-right</div>
+
+<div class="wrap">
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Module</th><th>Status</th><th>Time</th><th>X</th></tr></thead>
+<tbody id="list"></tbody>
+</table>
+</div>
+
+<div style="text-align:center;font-size:11px;font-weight:bold;margin-top:10px">This website built and Design by Issa Koroma year 2 student</div>
+</div>
+</div>
+
+<script>
+const departments=["Law (LLB)","Information Systems","Business Administration","Applied Accounting","Human Resource Mgt","Procurement & Supply","Nursing (SRN)","Computer Science"];
+let curDept=""; let curYear="Year 2";
+let all=JSON.parse(localStorage.getItem('imatt_dept_final')||'null');
+if(!all){all={};departments.forEach(d=>{all[d]={'Year 1':[],'Year 2':[],'Year 3':[],'Year 4':[]}});}
+function save(){localStorage.setItem('imatt_dept_final',JSON.stringify(all));}
+function renderDepts(){let h="";departments.forEach(d=>{h+=`<button class="deptBtn" onclick="selectDept('${d}')">${d}</button>`});document.getElementById('deptList').innerHTML=h;}renderDepts();
+function selectDept(d){curDept=d;document.getElementById('deptTitle').innerText=d;deptPage.classList.remove('active');home.classList.add('active');}
+function goDept(){home.classList.remove('active');deptPage.classList.add('active');}
+function goHome(){att.classList.remove('active');home.classList.add('active');}
+function openY(y){curYear=y;home.classList.remove('active');att.classList.add('active');document.getElementById('tYear').innerText=(y==='All'?'ADMIN ALL - '+curDept:curDept+' - '+y);render();}
+function openAdmin(){let p=prompt('Admin PIN:');if(p==='1234')openY('All');else if(p!==null)alert('Wrong PIN');}
+function add(){
+let id=sid.value.trim(),n=sname.value.trim(),m=ccourse.value.trim(),s=sstat.value;
+if(!id||!n||!m){alert('Fill all boxes');return;}
+let target=curYear==='All'?'Year 2':curYear;
+all[curDept][target].unshift({id:id,name:n,module:m,stat:s,time:new Date().toLocaleTimeString()});
+save();render();sid.value='';sname.value='';ccourse.value='';alert('Saved!');
+}
+function toggleStat(y,i){let rec=all[curDept][y][i];rec.stat=rec.stat==='Present'?'Absent':'Present';rec.time=new Date().toLocaleTimeString();save();render();}
+function editMod(y,i){let nm=prompt('Edit Module:',all[curDept][y][i].module);if(nm){all[curDept][y][i].module=nm.trim();all[curDept][y][i].time=new Date().toLocaleTimeString();save();render();}}
+function del(y,i){if(confirm('Delete?')){all[curDept][y].splice(i,1);save();render();}}
+function render(){
+list.innerHTML='';let p=0,a=0,t=0;
+let years=curYear==='All'?['Year 1','Year 2','Year 3','Year 4']:[curYear];
+years.forEach(y=>{
+all[curDept][y].forEach((s,i)=>{
+if(s.stat==='Present')p++;else a++;t++;
+list.innerHTML+=`<tr><td>${s.id}</td><td style="text-align:left">${s.name}</td><td><span class="editBtn" onclick="editMod('${y}',${i})">${s.module}</span></td><td><button class="statusBtn ${s.stat==='Present'?'present':'absent'}" onclick="toggleStat('${y}',${i})">${s.stat}</button></td><td>${s.time}</td><td><button onclick="del('${y}',${i})" style="background:red;color:#fff;border:none;padding:4px 8px;border-radius:4px">X</button></td></tr>`;
+});
+});
+pC.innerText=p;aC.innerText=a;tC.innerText=t;
+}
+function exp(){let csv="Department,Year,ID,Name,Module,Status,Time\n";let years=curYear==='All'?['Year 1','Year 2','Year 3','Year 4']:[curYear];years.forEach(y=>{all[curDept][y].forEach(s=>{csv+=`"${curDept}","${y}","${s.id}","${s.name}","${s.module}","${s.stat}","${s.time}"\n`;});});let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=curDept+"_"+curYear+".csv";a.click();}
+</script>
+</body>
+</html>
