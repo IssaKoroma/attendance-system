@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IMATT College</title>
+<style>
+body{font-family:Arial;background:#0f4c3a;margin:0;padding:10px}
+.card{background:#fff;border-radius:14px;padding:14px;max-width:750px;margin:10px auto}
+.header{text-align:center}.header h2{margin:6px 0;color:#0f4c3a}
+.motto{color:#8b0000;font-size:11px;font-weight:bold;font-style:italic}
+.yearMenu{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.yearBtn{padding:22px;border:none;border-radius:12px;color:#fff;font-weight:bold;font-size:14px}
+.y1{background:#1e40af}.y2{background:#059669}.y3{background:#d97706}.y4{background:#7c3aed}
+input,select{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:1px solid #ddd;box-sizing:border-box}
+button.main{width:100%;padding:11px;border:none;border-radius:8px;background:#0f4c3a;color:#fff;font-weight:bold;margin-top:6px}
+.count{display:flex;justify-content:space-around;background:#ecfdf5;padding:10px;border-radius:10px;font-weight:bold;margin:10px 0;border:1px solid #d1fae5}
+.page{display:none}.page.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:500px}th,td{padding:8px;border-bottom:1px solid #eee;text-align:center}th{background:#0f4c3a;color:#fff}.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="header">
+<h2>IMATT COLLEGE</h2>
+<div class="motto">Education is the Source of Human Progress</div>
+<div style="background:#8b0000;color:#fff;padding:4px 10px;border-radius:20px;font-size:10px;display:inline-block;margin-top:6px">OFFICIAL ATTENDANCE - Freetown</div>
+</div>
+
+<div id="home" class="page active">
+<div style="text-align:center;font-weight:bold;margin:14px 0;color:#374151">SELECT YEAR - Each Year Sees Only Their Own</div>
+<div class="yearMenu">
+<button class="yearBtn y1" onclick="openY('Year 1')">🎓<br>Year 1</button>
+<button class="yearBtn y2" onclick="openY('Year 2')">📚<br>Year 2</button>
+<button class="yearBtn y3" onclick="openY('Year 3')">📖<br>Year 3</button>
+<button class="yearBtn y4" onclick="openY('Year 4 - Final Year')">👨‍🎓<br>Final Year</button>
+</div>
+<button class="main" style="background:#111827" onclick="openY('All')">🔐 Admin - View All Years</button>
+<div style="text-align:center;margin-top:14px;font-size:12px;color:#555">Design by Issa Koroma - Year 2 2026</div>
+</div>
+
+<div id="att" class="page">
+<button class="main" style="width:auto;background:#6b7280;padding:6px 14px" onclick="goHome()">← Back</button>
+<div id="tYear" style="text-align:center;font-weight:bold;margin:10px 0;color:#0f4c3a;font-size:18px"></div>
+<input id="sid" placeholder="Student ID"><input id="sname" placeholder="Full Name"><input id="course" placeholder="Module"><select id="status"><option>Present</option><option>Absent</option></select>
+<button class="main" onclick="add()">Mark Attendance</button><button class="main" style="background:#16a34a" onclick="exp()">Export Excel</button>
+<div class="count"><div>Present<br><span id="pC">0</span></div><div>Absent<br><span id="aC">0</span></div><div>Total<br><span id="tC">0</span></div></div>
+<div class="wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Module</th><th>Status</th><th>Time</th><th>X</th></tr></thead><tbody id="list"></tbody></table></div>
+</div>
+</div>
+<script>
+let all=JSON.parse(localStorage.getItem('imatt_quick')||'{}');if(!all['Year 1'])all={'Year 1':[],'Year 2':[],'Year 3':[],'Year 4 - Final Year':[]};let cur='Year 1';
+function openY(y){cur=y;home.classList.remove('active');att.classList.add('active');tYear.innerText=y==='All'?'All Years - Admin':y;render();}
+function goHome(){att.classList.remove('active');home.classList.add('active');}
+function add(){let id=sid.value.trim(),name=sname.value.trim(),mod=course.value.trim(),st=status.value;if(!id||!name||!mod){alert('Fill all');return}let target=cur==='All'?prompt('Which year? Year 1, Year 2, Year 3, Year 4 - Final Year','Year 2'):cur;if(!all[target]){alert('Invalid');return}all[target].unshift({id,name,module:mod,status:st,time:new Date().toLocaleTimeString(),date:new Date().toLocaleDateString()});localStorage.setItem('imatt_quick',JSON.stringify(all));render();sid.value='';sname.value='';course.value='';}
+function del(y,i){if(confirm('Delete?')){all[y].splice(i,1);localStorage.setItem('imatt_quick',JSON.stringify(all));render();}}
+function render(){list.innerHTML='';let p=0,a=0,t=0;let years=cur==='All'?Object.keys(all):[cur];years.forEach(y=>{all[y].forEach((s,i)=>{if(s.status==='Present')p++;else a++;t++;list.innerHTML+=`<tr><td>${s.id}</td><td style="text-align:left">${s.name}</td><td style="text-align:left">${s.module}</td><td><b style="color:${s.status==='Present'?'#16a34a':'#dc2626'}">${s.status}</b></td><td>${s.time}</td><td><button onclick="del('${y}',${i})" style="background:red;color:#fff;border:none;padding:3px 6px;border-radius:4px">X</button></td></tr>`;});});pC.innerText=p;aC.innerText=a;tC.innerText=t;}
+function exp(){let csv="Year,ID,Name,Module,Status,Time\n";let years=cur==='All'?Object.keys(all):[cur];years.forEach(y=>{all[y].forEach(s=>{csv+=`"${y}","${s.id}","${s.name}","${s.module}","${s.status}","${s.time}"\n`;});});let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download="IMATT_"+cur+".csv";a.click();}
+</script>
+</body>
+</html>
