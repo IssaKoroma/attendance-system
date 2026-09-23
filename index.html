@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IMATT COLLEGE - Final Attendance System</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body{margin:0;font-family:Arial;background:#0a3d2e;padding:8px}
+.card{max-width:600px;margin:0 auto;background:#fff;border-radius:18px;padding:14px}
+.header{text-align:center}
+h1{color:#0a3d2e;margin:0}
+.sub{color:#8b0000;font-weight:bold;font-style:italic;font-size:13px}
+.badge{background:#8b0000;color:#fff;padding:6px 18px;border-radius:20px;display:inline-block;margin:6px 0;font-size:12px}
+.box{background:#e6f4f0;border:2px solid #0a3d2e;border-radius:14px;padding:12px;margin-top:10px}
+.tabs{display:flex;gap:6px}
+.tab{flex:1;padding:10px;border-radius:10px;border:2px solid #0a3d2e;background:#fff;font-weight:bold;cursor:pointer}
+.tab.active{background:#0a3d2e;color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.btn-dept{padding:10px;border:2px solid #0a3d2e;border-radius:10px;background:#fff;font-weight:bold;cursor:pointer}
+.btn-dept.active{background:#0a3d2e;color:#fff}
+.years{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.ybtn{padding:8px;border:2px solid #0a3d2e;border-radius:8px;background:#fff;font-weight:bold;cursor:pointer}
+.ybtn.active{background:#0a3d2e;color:#fff}
+input,select{width:100%;padding:11px;border-radius:9px;border:1px solid #aaa;margin:5px 0;box-sizing:border-box}
+.btn{width:100%;padding:11px;border:none;border-radius:9px;background:#0a3d2e;color:#fff;font-weight:bold;margin-top:7px;cursor:pointer}
+.btn-green{background:#0a7a42}.btn-red{background:#8b0000}.btn-gray{background:#6c757d}
+.code{font-size:28px;color:red;font-weight:bold;text-align:center}
+.lock{background:#fff3cd;border:2px solid #ffb100;border-radius:10px;padding:8px;text-align:center;font-weight:bold;font-size:12px;color:#664d00;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th,td{border:1px solid #ccc;padding:6px} th{background:#0a3d2e;color:#fff}
+.footer{text-align:center;font-size:10px;color:#0a3d2e;margin-top:12px;line-height:1.4}
+.small{font-size:11px;color:#333}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="header">
+<h1>IMATT COLLEGE</h1>
+<div class="sub">Education is the Source of Human Progress</div>
+<div class="badge" id="clock"></div>
+<div class="small">Current: <b id="curInfo">Not Selected</b></div>
+</div>
+
+<div class="box">
+<div class="tabs">
+<button class="tab active" id="tabStudent" onclick="switchRole('student')">STUDENT</button>
+<button class="tab" id="tabLect" onclick="switchRole('lecturer')">LECTURER</button>
+<button class="tab" id="tabAdmin" onclick="switchRole('admin')">SUPER ADMIN</button>
+</div>
+
+<!-- DEPARTMENT & YEAR SELECTOR -->
+<div style="margin-top:10px">
+<h4 style="margin:0;text-align:center">Select Department & Year</h4>
+<div class="grid" id="deptGrid"></div>
+<div class="years" id="yearGrid">
+<button class="ybtn" onclick="setYear(1)">Y1</button>
+<button class="ybtn" onclick="setYear(2)">Y2</button>
+<button class="ybtn" onclick="setYear(3)">Y3</button>
+<button class="ybtn" onclick="setYear(4)">Y4</button>
+</div>
+<div id="lockMsg" class="lock" style="display:none"></div>
+</div>
+</div>
+
+<!-- LECTURER LOGIN BOX -->
+<div class="box" id="lectLoginBox" style="display:none">
+<h3 style="margin:0">Lecturer Login</h3>
+<input id="lectId" placeholder="Lecturer ID e.g. LEC001">
+<input id="lectPass" type="password" placeholder="Password">
+<button class="btn" onclick="loginLecturer()">Login as Lecturer</button>
+<div class="small">Default: ID: LEC001 Pass: imatt2026<br>Contact Issa (1727) to add new lecturers</div>
+<button class="btn btn-gray" onclick="logoutLect()">Logout</button>
+</div>
+
+<!-- SUPER ADMIN LOGIN BOX -->
+<div class="box" id="adminLoginBox" style="display:none">
+<h3 style="margin:0">Super Admin - Issa Koroma (1727)</h3>
+<input id="adminPass" type="password" placeholder="Super Admin Password">
+<button class="btn btn-red" onclick="loginAdmin()">Login Super Admin</button>
+<div id="adminPanel" style="display:none">
+<h4>Add New Lecturer</h4>
+<input id="newLectName" placeholder="Lecturer Name">
+<input id="newLectId" placeholder="New ID e.g. LEC002">
+<input id="newLectPass" placeholder="Password">
+<select id="newLectDept"><option>Computer Science</option><option>Info Systems</option><option>Business Admin</option><option>Accounting</option><option>HRM</option><option>Procurement</option><option>Nursing</option><option>Law (LLB)</option></select>
+<select id="newLectYear"><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option><option value="0">All Years</option></select>
+<button class="btn btn-green" onclick="addLecturer()">Add Lecturer</button>
+<div id="lectList" class="small"></div>
+</div>
+<button class="btn btn-gray" onclick="logoutAdmin()">Logout Admin</button>
+</div>
+
+<!-- CODE GENERATION - ONLY FOR LOGGED LECTURER/ADMIN -->
+<div class="box" id="codeBox" style="display:none">
+<b id="whoami">Not Logged In</b><br>
+Module: <input id="moduleName" placeholder="Module e.g. Networking">
+<div>Code: <span class="code" id="codeShow">Not Generated</span><br>Expiry: <span id="timeShow" style="color:red">--:--</span></div>
+<button class="btn" id="genBtn" onclick="genCode()">Generate Code (15 Min)</button>
+<p>Present Live: <b id="liveCount">0</b> - <span id="noStud">No students yet</span></p>
+</div>
+
+<!-- STUDENT MARKING -->
+<div class="box" id="studentBox">
+<h3 style="margin:0;text-align:center">Student Mark Attendance</h3>
+<input id="sName" placeholder="Full Name">
+<input id="sId" placeholder="Student ID">
+<input id="sCode" placeholder="Enter Code From Lecturer">
+<button class="btn btn-green" onclick="mark()">Mark Attendance</button>
+<p id="sMsg" style="text-align:center;font-weight:bold"></p>
+</div>
+
+<!-- REPORT - ONLY FOR LECTURER/ADMIN -->
+<div class="box" id="reportBox" style="display:none">
+<h3 style="margin:0">Attendance Report: <span id="repInfo"></span></h3>
+<div style="overflow:auto"><table id="repTable"><tr><th>Name</th><th>ID</th><th>Year</th><th>Dept</th><th>Time</th></tr></table></div>
+<button class="btn btn-green" id="dlBtn" onclick="downloadExcel()">📥 Download Excel (Lecturer Only)</button>
+<button class="btn btn-red" id="clearBtn" onclick="clearData()">Clear Records (Lecturer/Admin Only)</button>
+<button class="btn btn-gray" onclick="refreshReport()">Refresh</button>
+</div>
+
+<div class="footer">
+FINAL SYSTEM Developed by <b>Issa Koroma (1727)</b> - Super Admin<br>
+Computer Science Year 2 | Controls All Classes & All Lecturers<br>
+IMATT College Freetown | 2026<br>
+Super Admin Pass: issa1727 | Lecturer Default: imatt2026
+</div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyBbfZk2v1k5qJv2q1xQ3r9sT8uVwXyZ123",
+  authDomain: "imatt-attendance.firebaseapp.com",
+  databaseURL: "https://imatt-attendance-default-rtdb.firebaseio.com",
+  projectId: "imatt-attendance",
+  appId: "1:000000000:web:000000"
+});
+const db = firebase.database();
+
+let curDept=""; let curYear=0; let role="student";
+let loggedLect=null; let isAdmin=false;
+let curCode=""; let curModule="";
+const depts=["Law (LLB)","Info Systems","Business Admin","Accounting","HRM","Procurement","Nursing","Computer Science"];
+
+function init(){
+ setInterval(()=>document.getElementById('clock').innerText=new Date().toLocaleString(),1000);
+ let g=document.getElementById('deptGrid');
+ depts.forEach(d=>{
+   let b=document.createElement('button'); b.className='btn-dept'; b.innerText=d;
+   b.onclick=()=>{curDept=d; document.querySelectorAll('.btn-dept').forEach(x=>x.classList.remove('active')); b.classList.add('active'); updateCur();};
+   g.appendChild(b);
+ });
+ db.ref('lecturers').on('value',s=>{if(isAdmin)showLectList(s.val()||{})});
+ db.ref('activeCode').on('value',s=>{syncCode(s.val())});
+ db.ref('attendance').on('value',s=>{updateLive(s.val())});
+}
+function updateCur(){document.getElementById('curInfo').innerText=(curDept||'No Dept')+' | '+(curYear?'Year '+curYear:'No Year'); if(curDept&&curYear) document.getElementById('repInfo').innerText=curDept+' Year '+curYear;}
+function setYear(y){curYear=y; document.querySelectorAll('.ybtn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); updateCur(); checkLock(); if(loggedLect||isAdmin) loadReport();}
+function checkLock(){
+ let lm=document.getElementById('lockMsg');
+ if(curDept==='Computer Science'&&curYear===2){lm.style.display='block'; lm.innerText='🔒 Locked: Computer Science Year 2 - Super Admin Issa Koroma (1727) - All Lecturers can view, only Issa can manage';}
+ else{lm.style.display='none';}
+}
+function switchRole(r){
+ role=r; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+ document.getElementById(r==='student'?'tabStudent':r==='lecturer'?'tabLect':'tabAdmin').classList.add('active');
+ document.getElementById('lectLoginBox').style.display=r==='lecturer'?'block':'none';
+ document.getElementById('adminLoginBox').style.display=r==='admin'?'block':'none';
+ document.getElementById('studentBox').style.display='block';
+ if((loggedLect||isAdmin)&&curDept&&curYear){document.getElementById('codeBox').style.display='block'; document.getElementById('reportBox').style.display='block';}
+}
+function loginLecturer(){
+ let id=document.getElementById('lectId').value.trim();
+ let pass=document.getElementById('lectPass').value.trim();
+ if(!id||!pass){alert('Enter ID & Password');return;}
+ db.ref('lecturers/'+id).once('value').then(s=>{
+  let l=s.val();
+  if(!l && id==='LEC001' && pass==='imatt2026'){ l={name:'Default Lecturer',id:id,pass:pass,dept:'Computer Science',year:0}; db.ref('lecturers/'+id).set(l);}
+  if(!l){alert('Lecturer not found. Contact Admin Issa 1727');return;}
+  if(l.pass!==pass){alert('Wrong password');return;}
+  loggedLect=l; isAdmin=false;
+  document.getElementById('whoami').innerText='Logged as Lecturer: '+l.name+' ('+l.id+') Dept: '+l.dept+' Year: '+(l.year===0?'All':l.year);
+  document.getElementById('codeBox').style.display='block'; document.getElementById('reportBox').style.display='block';
+  alert('Welcome Lecturer '+l.name);
+ });
+}
+function loginAdmin(){
+ let p=document.getElementById('adminPass').value;
+ if(p!=='issa1727' && p!=='1727'){alert('Wrong Super Admin Password! Use issa1727');return;}
+ isAdmin=true; loggedLect=null;
+ document.getElementById('whoami').innerText='🔑 SUPER ADMIN: Issa Koroma (1727) - Controls ALL Classes & Lecturers';
+ document.getElementById('codeBox').style.display='block'; document.getElementById('reportBox').style.display='block'; document.getElementById('adminPanel').style.display='block';
+ alert('Welcome Super Admin Issa! You can now manage all years 1-4');
+ db.ref('lecturers').once('value').then(s=>showLectList(s.val()||{}));
+}
+function logoutLect(){loggedLect=null; document.getElementById('codeBox').style.display='none'; document.getElementById('reportBox').style.display='none'; alert('Lecturer Logged Out');}
+function logoutAdmin(){isAdmin=false; document.getElementById('adminPanel').style.display='none'; document.getElementById('codeBox').style.display='none'; document.getElementById('reportBox').style.display='none'; alert('Admin Logged Out');}
+function addLecturer(){
+ let name=document.getElementById('newLectName').value; let id=document.getElementById('newLectId').value; let pass=document.getElementById('newLectPass').value;
+ let dept=document.getElementById('newLectDept').value; let year=parseInt(document.getElementById('newLectYear').value);
+ if(!name||!id||!pass){alert('Fill all');return;}
+ db.ref('lecturers/'+id).set({name:name,id:id,pass:pass,dept:dept,year:year});
+ alert('Lecturer '+name+' Added for '+dept+' Year '+(year===0?'All':year));
+}
+function showLectList(data){
+ let h='<b>All Lecturers:</b><br>';
+ for(let k in data){ let l=data[k]; h+=`${l.id} - ${l.name} - ${l.dept} Y${l.year===0?'All':l.year} <br>`;}
+ document.getElementById('lectList').innerHTML=h;
+}
+function genCode(){
+ if(!isAdmin &&!loggedLect){alert('Login as Lecturer or Super Admin first!');return;}
+ if(!curDept||!curYear){alert('Select Dept & Year first!');return;}
+ if(!isAdmin && loggedLect){
+   if(loggedLect.dept!==curDept && loggedLect.year!==0){alert('You can only generate for your Dept: '+loggedLect.dept);return;}
+   if(loggedLect.year!==0 && loggedLect.year!==curYear){alert('You can only generate for Year '+loggedLect.year);return;}
+ }
+ let mod=document.getElementById('moduleName').value||curDept+' Y'+curYear;
+ curModule=mod; curCode=Math.floor(1000+Math.random()*9000).toString();
+ document.getElementById('codeShow').innerText=curCode;
+ let end=Date.now()+15*60*1000;
+ db.ref('activeCode/'+curDept+'/Year'+curYear).set({code:curCode,module:mod,endTime:end,dept:curDept,year:curYear,by:isAdmin?'Issa (SuperAdmin)':loggedLect.name});
+ startTimer(end);
+}
+function startTimer(end){
+ let iv=setInterval(()=>{
+  let d=end-Date.now();
+  if(d<=0){document.getElementById('timeShow').innerText='Expired'; document.getElementById('codeShow').innerText='Not Generated'; clearInterval(iv);return;}
+  document.getElementById('timeShow').innerText=Math.floor(d/60000)+':'+String(Math.floor((d%60000)/1000)).padStart(2,'0');
+ },1000);
+}
+function syncCode(all){
+ if(!curDept||!curYear||!all) return;
+ if(all[curDept] && all[curDept]['Year'+curYear]){
+   let c=all[curDept]['Year'+curYear]; curCode=c.code; curModule=c.module;
+   document.getElementById('codeShow').innerText=c.code; startTimer(c.endTime);
+ }
+}
+function mark(){
+ let name=document.getElementById('sName').value.trim(); let sid=document.getElementById('sId').value.trim(); let code=document.getElementById('sCode').value.trim();
+ if(!name||!sid||!code){document.getElementById('sMsg').innerText='Fill all';return;}
+ if(!curDept||!curYear){document.getElementById('sMsg').innerText='Select Dept & Year first!';return;}
+ db.ref('activeCode/'+curDept+'/Year'+curYear).once('value').then(s=>{
+  let d=s.val(); if(!d||d.code!==code){document.getElementById('sMsg').innerText='❌ Wrong Code';return;}
+  if(Date.now()>d.endTime){document.getElementById('sMsg').innerText='❌ Expired';return;}
+  db.ref('attendance/'+curDept+'/Year'+curYear+'/'+sid).set({name:name,id:sid,time:new Date().toLocaleString(),dept:curDept,year:curYear,module:d.module});
+  document.getElementById('sMsg').innerText='✅ Marked for '+curDept+' Year '+curYear;
+ });
+}
+function updateLive(all){
+ if(!curDept||!curYear||!all) return;
+ let data=(all[curDept]&&all[curDept]['Year'+curYear])?all[curDept]['Year'+curYear]:{};
+ let c=Object.keys(data).length;
+ document.getElementById('liveCount').innerText=c; document.getElementById('noStud').innerText=c===0?'No students yet':c+' present';
+ if((isAdmin||loggedLect)&&curDept&&curYear) loadReportFrom(data);
+}
+function loadReport(){ if(!curDept||!curYear)return; db.ref('attendance/'+curDept+'/Year'+curYear).once('value').then(s=>loadReportFrom(s.val()||{}));}
+function loadReportFrom(data){
+ let t=document.getElementById('repTable'); t.innerHTML='<tr><th>Name</th><th>ID</th><th>Year</th><th>Dept</th><th>Time</th></tr>';
+ for(let k in data){ let r=data[k]; t.innerHTML+=`<tr><td>${r.name}</td><td>${r.id}</td><td>Y${r.year}</td><td>${r.dept}</td><td>${r.time}</td></tr>`;}
+}
+function refreshReport(){loadReport();}
+function downloadExcel(){
+ if(!isAdmin &&!loggedLect){alert('Only Lecturer/Admin can download Excel!');return;}
+ let table=document.getElementById('repTable'); let wb=XLSX.utils.table_to_book(table);
+ XLSX.writeFile(wb, curDept+'_Year'+curYear+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+function clearData(){
+ if(!isAdmin &&!loggedLect){alert('Only Lecturer/Admin');return;}
+ if(confirm('Clear all for '+curDept+' Year '+curYear+'?')) db.ref('attendance/'+curDept+'/Year'+curYear).remove();
+}
+init();
+</script>
+</body>
+</html>
