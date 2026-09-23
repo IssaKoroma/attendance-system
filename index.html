@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMATT COLLEGE - Attendance LIVE</title>
+<style>
+ body{font-family:Arial,sans-serif;background:#f2f7f2;margin:0;padding:10px}
+.box{border:2px solid #0a3d2e;border-radius:14px;padding:15px;margin-bottom:15px;background:#e8f5e9}
+ h2,h3{text-align:center;color:#0a3d2e}
+ input{width:100%;padding:13px;margin:7px 0;border-radius:8px;border:1.5px solid #888;font-size:16px;box-sizing:border-box}
+ button{width:100%;padding:14px;background:#0a3d2e;color:white;border:none;border-radius:10px;font-size:17px;font-weight:bold;margin-top:8px}
+ #codeDisplay{font-size:36px;font-weight:bold;color:#d32f2f;text-align:center}
+ #expiry{color:#d32f2f;text-align:center;font-weight:bold}
+.live{background:white;padding:10px;border-radius:8px;border:1px dashed #0a3d2e;font-weight:bold}
+.student{padding:8px;border-bottom:1px solid #ccc;background:white;margin:4px 0;border-radius:6px}
+.success{color:#0a7a0a;text-align:center;font-weight:bold;font-size:20px}
+.error{color:#c62828;text-align:center;font-weight:bold}
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="box">
+<h3>IMATT COLLEGE - Lecturer Panel</h3>
+<p style="text-align:center">Department: Computer Science Year 1</p>
+<hr>
+<div>Code: <div id="codeDisplay">----</div></div>
+<div id="expiry">Expiry: Not generated</div>
+<button onclick="generateCode()">🔄 Generate Code (15 Min)</button>
+<p class="live">Present Live: <span id="liveCount">0</span><br><span id="liveText">No students yet</span></p>
+<div id="liveList"></div>
+<button onclick="downloadExcel()" style="background:#1b5e20">⬇️ Download Excel (CSV)</button>
+<button onclick="clearAll()" style="background:#b71c1c">🗑️ Clear All</button>
+</div>
+<div class="box">
+<h2>Student Mark Attendance</h2>
+<input id="sName" placeholder="Full Name">
+<input id="sId" placeholder="Student ID">
+<input id="sCode" placeholder="Enter Code">
+<button onclick="markAttendance()" style="background:#0d6efd">✅ Mark Attendance</button>
+<p id="status"></p>
+</div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBbfZkPmrPyEAkpaaAG5DPb4tk7k30ILPU",
+  authDomain: "imatt---attendance.firebaseapp.com",
+  databaseURL: "https://imatt---attendance-default-rtdb.firebaseio.com",
+  projectId: "imatt---attendance",
+  storageBucket: "imatt---attendance.firebasestorage.app",
+  messagingSenderId: "774914670268",
+  appId: "1:774914670268:web:b74a5749c382bfa33e5ab9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let currentCode="";let expiryTime=0;window._lastList=[];
+function generateCode(){currentCode=Math.floor(1000+Math.random()*9000).toString();expiryTime=Date.now()+15*60*1000;db.ref("attendance/current").set({code:currentCode,expiry:expiryTime});}
+function updateCodeUI(){document.getElementById("codeDisplay").innerText=currentCode||"----";if(!expiryTime){document.getElementById("expiry").innerText="Expiry: Not generated";return;}let diff=expiryTime-Date.now();if(diff<=0){document.getElementById("expiry").innerText="Expiry: EXPIRED";return;}let m=Math.floor(diff/60000);let s=Math.floor((diff%60000)/1000);document.getElementById("expiry").innerText="Expiry: "+m+":"+(s<10?"0":"")+s+" remaining";}
+setInterval(updateCodeUI,1000);
+function markAttendance(){const name=document.getElementById("sName").value.trim();const sid=document.getElementById("sId").value.trim();const code=document.getElementById("sCode").value.trim();const status=document.getElementById("status");if(!name||!sid||!code){status.className="error";status.innerText="❌ Fill all fields";return;}if(!currentCode){status.className="error";status.innerText="❌ No code yet";return;}if(Date.now()>expiryTime){status.className="error";status.innerText="❌ Code expired";return;}if(code!==currentCode){status.className="error";status.innerText="❌ Wrong Code!";return;}const record={name:name,id:sid,time:new Date().toLocaleString(),code:code,timestamp:Date.now()};db.ref("attendance/records/"+sid).once("value").then(snap=>{if(snap.exists()){status.className="success";status.innerHTML="✅ Already Marked for<br>Computer Science Year 1";return;}db.ref("attendance/records/"+sid).set(record).then(()=>{status.className="success";status.innerHTML="✅ Marked for Computer Science<br>Year 1 - Successful!";document.getElementById("sName").value="";document.getElementById("sId").value="";document.getElementById("sCode").value="";});});}
+function loadLive(){db.ref("attendance/current").on("value",snap=>{const cur=snap.val();if(cur){currentCode=cur.code;expiryTime=cur.expiry;updateCodeUI();}});db.ref("attendance/records").on("value",snap=>{const data=snap.val()||{};const list=Object.values(data).sort((a,b)=>b.timestamp-a.timestamp);renderLive(list);});}
+function renderLive(list){document.getElementById("liveCount").innerText=list.length;document.getElementById("liveText").innerText=list.length?list.length+" students present":"No students yet";let html="";list.forEach(r=>{html+=`<div class="student">✅ <b>${r.name}</b> - ${r.id}<br><small>${r.time}</small></div>`;});document.getElementById("liveList").innerHTML=html;window._lastList=list;}
+function downloadExcel(){let list=window._lastList||[];if(!list.length){alert("No attendance yet");return;}let csv="Name,ID,Time,Code\n";list.forEach(r=>{csv+=`"${r.name}","${r.id}","${r.time}","${r.code}"\n`;});let blob=new Blob([csv],{type:"text/csv"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="IMATT_Attendance_"+new Date().toISOString().slice(0,10)+".csv";a.click();}
+function clearAll(){if(!confirm("Clear ALL attendance?"))return;db.ref("attendance/records").remove();}
+loadLive();updateCodeUI();
+</script>
+</body>
+</html>
