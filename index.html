@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IMATT - Attendance</title>
+<style>
+body{background:#0a3d2e;font-family:Arial;margin:0;padding:10px}
+.card{background:white;max-width:500px;margin:auto;border-radius:18px;padding:18px}
+h1{color:#0a3d2e;text-align:center;margin:5px}
+.sub{color:#8b0000;text-align:center;font-style:italic;font-weight:bold;font-size:14px}
+.badge{background:#8b0000;color:white;padding:6px 14px;border-radius:20px;display:block;width:fit-content;margin:8px auto;font-size:12px}
+.btn-back{background:#6c757d;color:white;border:none;padding:10px 15px;border-radius:20px;font-weight:bold}
+.dept-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.dept-btn{border:2px solid #0a3d2e;padding:14px;border-radius:12px;background:white;font-weight:bold;color:#0a3d2e}
+.year-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.year-btn{padding:18px;border-radius:14px;border:none;color:white;font-weight:bold}
+.y1{background:#1e3a8a}.y2{background:#0e9f6e}.y3{background:#d97706}.y4{background:#7c3aed}
+input{width:100%;padding:12px;margin:7px 0;border-radius:9px;border:1px solid #bbb;box-sizing:border-box}
+button.main{background:#0a3d2e;color:white;padding:12px;border:none;border-radius:9px;font-weight:bold;width:100%;margin-top:6px}
+.hidden{display:none}
+.teacher-box{background:#e8f8f5;border:2px solid #0a3d2e;padding:12px;border-radius:10px;margin:12px 0}
+#todayCode{font-size:26px;color:red;font-weight:bold}
+#timer{color:red;font-weight:bold}
+.small{font-size:11px;color:gray;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>IMATT COLLEGE</h1>
+<div class="sub">Education is the Source of Human Progress</div>
+<div class="badge">OFFICIAL ATTENDANCE - Freetown</div>
+
+<div id="teacherLogin" style="margin-top:10px;background:#f1f1f1;padding:8px;border-radius:8px">
+<input type="password" id="teacherPass" placeholder="Lecturer Password (Students skip)">
+<button class="main" onclick="teacherLogin()" style="background:#444">Login as Lecturer</button>
+</div>
+
+<div id="teacherPanel" class="hidden">
+<div class="teacher-box">
+<p style="text-align:center">✅ LECTURER MODE - <span id="teachingInfo"></span></p>
+<p>Secret Code for <b><span id="codeDeptYear"></span></b>: <br><span id="todayCode">Not Generated</span></p>
+<p>Time Left: <span id="timer">--:--</span></p>
+<button class="main" onclick="generateCode()">Generate Code For This Class Only</button>
+<p>Present Today: <b id="presentCount">0</b></p>
+<div id="todayList" style="font-size:13px"></div>
+<button class="main" onclick="exportExcel()" style="background:#27ae60">Download Excel</button>
+<button class="main" onclick="teacherLogout()" style="background:gray">Logout</button>
+<p class="small">Each Dept + Each Year has OWN code. Don't share across classes!</p>
+</div>
+</div>
+
+<div id="stepDept">
+<h2 style="text-align:center">SELECT DEPARTMENT</h2>
+<div class="dept-grid">
+<button class="dept-btn" onclick="selectDept('Law (LLB)')">Law (LLB)</button>
+<button class="dept-btn" onclick="selectDept('Information Systems')">Information Systems</button>
+<button class="dept-btn" onclick="selectDept('Business Administration')">Business Administration</button>
+<button class="dept-btn" onclick="selectDept('Applied Accounting')">Applied Accounting</button>
+<button class="dept-btn" onclick="selectDept('Human Resource Mgt')">Human Resource Mgt</button>
+<button class="dept-btn" onclick="selectDept('Procurement & Supply')">Procurement & Supply</button>
+<button class="dept-btn" onclick="selectDept('Nursing (SRN)')">Nursing (SRN)</button>
+<button class="dept-btn" onclick="selectDept('Computer Science')">Computer Science</button>
+</div>
+</div>
+
+<div id="stepYear" class="hidden">
+<button class="btn-back" onclick="backToDept()">← Back to Departments</button>
+<div style="background:#e6f4ea;padding:10px;border-radius:8px;text-align:center;margin:10px 0;font-weight:bold" id="deptNameShow"></div>
+<h2 style="text-align:center">SELECT YEAR</h2>
+<div style="background:#fff3cd;padding:6px;border-radius:20px;text-align:center;font-size:12px">🔒 Each Year Sees Only Their Own Data & Own Code</div>
+<div class="year-grid">
+<button class="year-btn y1" onclick="selectYear('Year 1')">🎓<br>Year 1</button>
+<button class="year-btn y2" onclick="selectYear('Year 2')">📚<br>Year 2</button>
+<button class="year-btn y3" onclick="selectYear('Year 3')">📖<br>Year 3</button>
+<button class="year-btn y4" onclick="selectYear('Final Year')">👨‍🎓<br>Final Year</button>
+</div>
+</div>
+
+<div id="stepAttendance" class="hidden">
+<button class="btn-back" onclick="backToYear()">← Back to Years</button>
+<h3 style="text-align:center"><span id="finalDept"></span> - <span id="finalYear"></span></h3>
+<div id="studentForm">
+<input type="text" id="stuID" placeholder="Student ID">
+<input type="text" id="stuName" placeholder="Full Name">
+<input type="text" id="secretCodeInput" placeholder="Enter Code for THIS Dept & Year Only">
+<button class="main" id="markBtn" onclick="markAttendance()">Mark Present</button>
+<p id="message" style="text-align:center;font-weight:bold"></p>
+</div>
+</div>
+</div>
+
+<script>
+const TEACHER_PASSWORD="imatt2026"; const DURATION=15;
+let selectedDept="", selectedYear="";
+
+function teacherLogin(){
+ if(document.getElementById('teacherPass').value===TEACHER_PASSWORD){
+  localStorage.setItem('imatt_teacher_logged','yes');
+  document.getElementById('teacherLogin').classList.add('hidden');
+  document.getElementById('teacherPanel').classList.remove('hidden');
+  if(selectedDept&&selectedYear){showCode(); startTimer(); updateCounts();}
+ } else alert('Wrong Password');
+}
+function teacherLogout(){localStorage.removeItem('imatt_teacher_logged'); location.reload();}
+function selectDept(d){
+ selectedDept=d; document.getElementById('stepDept').classList.add('hidden');
+ document.getElementById('stepYear').classList.remove('hidden');
+ document.getElementById('deptNameShow').innerText=d;
+}
+function backToDept(){document.getElementById('stepYear').classList.add('hidden'); document.getElementById('stepDept').classList.remove('hidden');}
+function selectYear(y){
+ selectedYear=y;
+ document.getElementById('stepYear').classList.add('hidden');
+ document.getElementById('stepAttendance').classList.remove('hidden');
+ document.getElementById('finalDept').innerText=selectedDept;
+ document.getElementById('finalYear').innerText=selectedYear;
+ document.getElementById('teachingInfo').innerText=selectedDept+' '+selectedYear;
+ document.getElementById('codeDeptYear').innerText=selectedDept+' '+selectedYear;
+ showCode(); startTimer(); updateCounts();
+ if(localStorage.getItem('imatt_teacher_logged')==='yes'){
+   document.getElementById('teacherLogin').classList.add('hidden');
+   document.getElementById('teacherPanel').classList.remove('hidden');
+ }
+}
+function backToYear(){document.getElementById('stepAttendance').classList.add('hidden'); document.getElementById('stepYear').classList.remove('hidden');}
+function getKey(type){ return type+'_'+selectedDept+'_'+selectedYear; }
+
+function generateCode(){
+ const code='IMATT-'+Math.random().toString(36).substring(2,6).toUpperCase();
+ const expiry=Date.now()+DURATION*60*1000;
+ localStorage.setItem(getKey('imatt_code'), code);
+ localStorage.setItem(getKey('imatt_expiry'), expiry);
+ document.getElementById('todayCode').innerText=code;
+ alert('NEW CODE for '+selectedDept+' '+selectedYear+': '+code+'\nWrite on board! Valid 15 mins only!');
+ startTimer();
+}
+function showCode(){
+ if(!selectedDept||!selectedYear) return;
+ let c=localStorage.getItem(getKey('imatt_code'));
+ document.getElementById('todayCode').innerText=c?c:'Not Generated - Tap Generate';
+}
+function startTimer(){
+ setInterval(()=>{
+  if(!selectedDept||!selectedYear) return;
+  let expiry=localStorage.getItem(getKey('imatt_expiry'));
+  if(!expiry){document.getElementById('timer').innerText='--:--'; return;}
+  let diff=expiry-Date.now();
+  if(diff<=0){
+   document.getElementById('timer').innerText='CLOSED';
+   document.getElementById('markBtn').disabled=true;
+   document.getElementById('markBtn').innerText='⛔ Closed';
+   document.getElementById('markBtn').style.background='red';
+  } else {
+   let m=Math.floor(diff/60000), s=Math.floor((diff%60000)/1000);
+   document.getElementById('timer').innerText=m+':'+(s<10?'0':'')+s;
+   document.getElementById('markBtn').disabled=false;
+   document.getElementById('markBtn').innerText='Mark Present';
+   document.getElementById('markBtn').style.background='#0a3d2e';
+  }
+ },1000);
+}
+function markAttendance(){
+ let expiry=localStorage.getItem(getKey('imatt_expiry'));
+ if(!expiry){alert('Lecturer has not started this class yet!'); return;}
+ if(Date.now()>expiry){alert('Attendance CLOSED for '+selectedDept+' '+selectedYear); return;}
+ let id=document.getElementById('stuID').value.trim();
+ let name=document.getElementById('stuName').value.trim();
+ let entered=document.getElementById('secretCodeInput').value.trim().toUpperCase();
+ let real=localStorage.getItem(getKey('imatt_code'));
+ let today=new Date().toISOString().split('T')[0];
+ if(!id||!name){alert('Enter ID and Name'); return;}
+ if(entered!==real){alert('Wrong Code! This is NOT code for '+selectedDept+' '+selectedYear); return;}
+ let phoneKey='phone_'+today+'_'+selectedDept+'_'+selectedYear;
+ if(localStorage.getItem(phoneKey)){document.getElementById('message').innerText='❌ This phone already used for '+selectedDept+' '+selectedYear+' today!'; return;}
+ let key='records_'+selectedDept+'_'+selectedYear;
+ let records=JSON.parse(localStorage.getItem(key)||'{}');
+ if(!records[today]) records[today]={};
+ if(records[today][id]){document.getElementById('message').innerText='❌ Already marked!'; return;}
+ records[today][id]={name:name, time:new Date().toLocaleTimeString()};
+ localStorage.setItem(key, JSON.stringify(records));
+ localStorage.setItem(phoneKey, name);
+ document.getElementById('message').innerText='✅ '+name+' Present for '+selectedDept+' '+selectedYear;
+ updateCounts();
+ document.getElementById('stuID').value=''; document.getElementById('stuName').value=''; document.getElementById('secretCodeInput').value='';
+}
+function updateCounts(){
+ if(!selectedDept||!selectedYear) return;
+ let today=new Date().toISOString().split('T')[0];
+ let key='records_'+selectedDept+'_'+selectedYear;
+ let records=JSON.parse(localStorage.getItem(key)||'{}');
+ let data=records[today]||{};
+ document.getElementById('presentCount').innerText=Object.keys(data).length;
+ let html=''; for(let id in data){ html+=`<div>${id} - ${data[id].name} ${data[id].time}</div>`; }
+ document.getElementById('todayList').innerHTML=html;
+}
+function exportExcel(){
+ let today=new Date().toISOString().split('T')[0];
+ let key='records_'+selectedDept+'_'+selectedYear;
+ let records=JSON.parse(localStorage.getItem(key)||'{}');
+ let data=records[today]; if(!data){alert('No data for '+selectedDept+' '+selectedYear); return;}
+ let csv='ID,Name,Time,Dept,Year\n';
+ for(let id in data){ csv+=id+','+data[id].name+','+data[id].time+','+selectedDept+','+selectedYear+'\n'; }
+ let blob=new Blob([csv],{type:'text/csv'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=selectedDept+'_'+selectedYear+'_'+today+'.csv'; a.click();
+}
+if(localStorage.getItem('imatt_teacher_logged')==='yes'){
+ document.getElementById('teacherLogin').classList.add('hidden');
+ document.getElementById('teacherPanel').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
