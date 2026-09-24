@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMATT COLLEGE ATTENDANCE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#d5e8d4;padding:10px}
+.card{background:#e8f5e9;border:3px solid #0f4c2e;border-radius:20px;padding:15px;margin-bottom:15px}
+.btn{padding:12px;border:2px solid #0f4c2e;border-radius:12px;font-weight:800;cursor:pointer;background:white;color:#0f4c2e;text-align:center;width:100%}
+.btn.active{background:#0f4c2e;color:white}
+.btn-dark{background:#0f4c2e;color:white;width:100%;margin-top:8px;padding:12px;border-radius:12px;font-weight:800;border:none}
+.btn-green{background:#16a34a;color:white;width:100%;margin-top:8px;padding:12px;border-radius:12px;font-weight:800;border:none}
+.input{width:100%;padding:12px;border:2px solid #0f4c2e;border-radius:12px;margin:6px 0}
+.hidden{display:none!important}
+.code-display{font-size:32px;font-weight:900;text-align:center;padding:15px;background:#0f4c2e;color:white;border-radius:12px;margin:10px 0;letter-spacing:5px}
+.timer{text-align:center;font-weight:800;color:#dc2626}
+.box-dash{border:2px dashed #0f4c2e;padding:10px;border-radius:12px;margin:8px 0;background:white}
+.photo-preview{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #0f4c2e;margin:5px auto;display:block}
+.student-row{display:flex;gap:10px;align-items:center;border:1px solid #ccc;padding:8px;margin:6px 0;border-radius:12px;background:white}
+.student-row.present{background:#dcfce7}
+</style>
+</head>
+<body>
+<div style="text-align:center;margin:10px 0">
+<h1 style="color:#0f4c2e">IMATT COLLEGE ATTENDANCE</h1>
+<p id="clock"></p>
+<p style="font-weight:800;color:green">Same Design - Click REFRESH to see All 200</p>
+<p id="currentClass" style="font-weight:800"></p>
+</div>
+
+<div class="card">
+<select class="input" id="deptSelect" onchange="selectDept(this.value)">
+<option>Computer Science</option><option>HND</option><option>Procurement</option><option>Nursing</option>
+<option>Business Administration</option><option>Accounting & Finance</option><option>Public Administration</option>
+<option>Banking & Finance</option><option>Human Resource Management</option><option>Marketing</option>
+<option>Entrepreneurship</option><option>Electrical Engineering</option>
+</select>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:10px">
+<button class="btn" id="y1" onclick="selectYear(1)">Y1</button>
+<button class="btn active" id="y2" onclick="selectYear(2)">Y2</button>
+<button class="btn" id="y3" onclick="selectYear(3)">Y3</button>
+<button class="btn" id="y4" onclick="selectYear(4)">Y4</button>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+<button class="btn active" id="tab-student" onclick="switchTab('student')">STUDENT</button>
+<button class="btn" id="tab-lecturer" onclick="switchTab('lecturer')">LECTURER</button>
+</div>
+<button class="btn" style="margin-top:10px" id="tab-admin" onclick="switchTab('admin')">ADMIN</button>
+</div>
+
+<div class="card" id="studentPanel">
+<h2>Student Panel</h2>
+<p id="deviceInfo" style="font-size:12px;font-weight:700"></p>
+<div class="box-dash">This Class: <b id="regCount">0</b> | Present: <b id="presCount">0</b> | TOTAL: <b id="totalCount">0</b><br><span id="classInfo"></span></div>
+<input class="input" id="stModule" value="Operating system">
+<input class="input" id="stName" placeholder="Full Name">
+<input class="input" id="stId" placeholder="Student ID">
+<input class="input" id="stPhone" placeholder="Phone">
+<input type="file" id="stPhoto" accept="image/*" capture="user" class="input" onchange="previewPhoto(event)">
+<img id="photoPreview" class="photo-preview hidden">
+<button class="btn-dark" onclick="addStudent()">Add Student</button>
+<div style="margin-top:10px;border-top:2px solid #0f4c2e;padding-top:10px">
+<input class="input" id="attCodeInput" placeholder="Enter Code">
+<button class="btn-dark" onclick="markAttendance()">Mark Attendance</button>
+<p id="codeTimer" class="timer">Waiting...</p>
+</div>
+<div id="studentList"></div>
+</div>
+
+<div class="card hidden" id="lecturerPanel">
+<h2>Lecturer Panel</h2>
+<input class="input" id="lecPass" type="password" placeholder="imatt2026">
+<button class="btn-dark" onclick="loginLecturer()">Login</button>
+<div id="lecControls" class="hidden">
+<div class="box-dash">This Class: <b id="lecReg">0</b> | Present: <b id="lecPres">0</b> | TOTAL: <b id="lecTotal">0</b><br>
+<button class="btn-green" onclick="loadOnline()">🔄 REFRESH - See All Names, IDs, Module</button>
+</div>
+<button class="btn-dark" onclick="generateCode('lecturer')">Generate Code - For 200</button>
+<div class="code-display" id="lecCodeShow"></div>
+<p id="lecCodeTimer" class="timer"></p>
+<div id="lecStudentList"></div>
+</div>
+</div>
+
+<div class="card hidden" id="adminPanel">
+<h2>Admin Panel</h2>
+<input class="input" id="admUser" placeholder="issa1727">
+<button class="btn-dark" onclick="loginAdmin()">Login Admin</button>
+<div id="admControls" class="hidden">
+<div class="box-dash">This Class: <b id="admReg">0</b> | Present: <b id="admPres">0</b> | TOTAL ALL: <b id="admTotal">0</b><br>
+<span id="admClassInfo"></span><br>
+<button class="btn-green" onclick="loadOnline()">🔄 REFRESH - See All 200 Names, IDs, Module + Download</button>
+</div>
+<button class="btn-dark" onclick="generateCode('admin')">Generate Code (15 Min) - One Code for 200</button>
+<div class="code-display" id="admCodeShow"></div>
+<p id="admCodeTimer" class="timer"></p>
+<div id="admStudentList" style="max-height:800px;overflow:auto"></div>
+<button class="btn-green" style="margin-top:8px" onclick="downloadClassExcel()">📥 Download Excel - All Names, IDs, Modules</button>
+<button class="btn-dark" style="background:#dc2626;margin-top:8px" onclick="clearAllData()">Clear ALL Data</button>
+</div>
+</div>
+
+<div style="text-align:center;font-size:12px;margin:20px 0;font-weight:700;color:#0f4c2e">IMATT COLLEGE ATTENDANCE by Issa (1727)</div>
+
+<script>
+let dept='Computer Science',year=2,moduleSel='Operating system';
+let students=JSON.parse(localStorage.getItem('imatt_final_s')||'[]');
+let attendance=JSON.parse(localStorage.getItem('imatt_final_a')||'[]');
+let currentCode=localStorage.getItem('imatt_final_c')||'',codeTime=parseInt(localStorage.getItem('imatt_final_t')||'0'),photoBase64='';
+let kvdb="https://kvdb.io/8J7x9y2a3b4c5d6e/imatt_";
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleString(),1000);
+function previewPhoto(e){
+ let f=e.target.files[0];
+ let r=new FileReader();
+ r.onload=ev=>{
+  photoBase64=ev.target.result;
+  let i=document.getElementById('photoPreview');
+  i.src=photoBase64;
+  i.classList.remove('hidden');
+ };
+ r.readAsDataURL(f);
+}
+function selectDept(d){dept=d;updateCurrent();}
+function selectYear(y){
+ year=y;
+ [1,2,3,4].forEach(i=>document.getElementById('y'+i).classList.remove('active'));
+ document.getElementById('y'+y).classList.add('active');
+ updateCurrent();
+}
+function updateCurrent(){
+ document.getElementById('currentClass').textContent=dept+' Year '+year+' - '+moduleSel;
+ render();
+}
+function switchTab(t){
+ document.getElementById('studentPanel').classList.add('hidden');
+ document.getElementById('lecturerPanel').classList.add('hidden');
+ document.getElementById('adminPanel').classList.add('hidden');
+ document.getElementById('tab-student').classList.remove('active');
+ document.getElementById('tab-lecturer').classList.remove('active');
+ document.getElementById('tab-admin').classList.remove('active');
+ if(t=='student'){document.getElementById('studentPanel').classList.remove('hidden');document.getElementById('tab-student').classList.add('active');}
+ if(t=='lecturer'){document.getElementById('lecturerPanel').classList.remove('hidden');document.getElementById('tab-lecturer').classList.add('active');}
+ if(t=='admin'){document.getElementById('adminPanel').classList.remove('hidden');document.getElementById('tab-admin').classList.add('active');}
+}
+function loadOnline(){
+ fetch(kvdb+'students').then(r=>r.text()).then(t=>{
+  try{
+   let on=JSON.parse(t);
+   if(Array.isArray(on)&&on.length>0){
+    let m=[...students];
+    on.forEach(o=>{if(!m.find(s=>s.id==o.id))m.push(o);});
+    students=m;
+    localStorage.setItem('imatt_final_s',JSON.stringify(students));
+   }
+  }catch(e){}
+  fetch(kvdb+'attendance').then(r=>r.text()).then(t2=>{
+   try{
+    let on=JSON.parse(t2);
+    if(Array.isArray(on)&&on.length>0){
+     let m=[...attendance];
+     on.forEach(o=>{if(!m.find(a=>a.id==o.id))m.push(o);});
+     attendance=m;
+     localStorage.setItem('imatt_final_a',JSON.stringify(attendance));
+    }
+   }catch(e){}
+   fetch(kvdb+'code').then(r=>r.text()).then(t3=>{
+    try{
+     let c=JSON.parse(t3);
+     if(c&&c.time>codeTime){currentCode=c.code;codeTime=c.time;localStorage.setItem('imatt_final_c',currentCode);localStorage.setItem('imatt_final_t',codeTime);}
+    }catch(e){}
+    render();updateTimer();
+    alert('✅ REFRESH Done: '+students.length+' students loaded - Names, IDs, Module | '+attendance.length+' present');
+   });
+  });
+ });
+}
+function saveAll(){
+ localStorage.setItem('imatt_final_s',JSON.stringify(students));
+ localStorage.setItem('imatt_final_a',JSON.stringify(attendance));
+ fetch(kvdb+'students',{method:'POST',body:JSON.stringify(students)}).catch(()=>{});
+ fetch(kvdb+'attendance',{method:'POST',body:JSON.stringify(attendance)}).catch(()=>{});
+}
+function saveCode(){
+ localStorage.setItem('imatt_final_c',currentCode);
+ localStorage.setItem('imatt_final_t',codeTime);
+ fetch(kvdb+'code',{method:'POST',body:JSON.stringify({code:currentCode,time:codeTime})}).catch(()=>{});
+}
+function addStudent(){
+ let n=document.getElementById('stName').value.trim();
+ let i=document.getElementById('stId').value.trim();
+ let p=document.getElementById('stPhone').value.trim();
+ let m=document.getElementById('stModule').value.trim()||'Operating system';
+ if(!n||!i){alert('Enter Name and ID');return;}
+ moduleSel=m;
+ students.push({name:n,id:i,phone:p,dept,year,module:m,photo:photoBase64,time:Date.now()});
+ localStorage.setItem('imatt_this_phone_final',i+' - '+n);
+ saveAll();
+ document.getElementById('stName').value='';document.getElementById('stId').value='';document.getElementById('stPhone').value='';
+ photoBase64='';document.getElementById('photoPreview').classList.add('hidden');
+ alert('✅ Added '+n+' | Total: '+students.length);
+ render();
+}
+function render(){
+ let filt=students.filter(s=>s.dept==dept&&s.year==year);
+ let pres=attendance.filter(a=>{let s=students.find(x=>x.id==a.id);return s&&s.dept==dept&&s.year==year;});
+ document.getElementById('regCount').textContent=filt.length;
+ document.getElementById('presCount').textContent=pres.length;
+ document.getElementById('totalCount').textContent=students.length;
+ document.getElementById('classInfo').textContent=dept+' Year '+year+' - Total All: '+students.length;
+ document.getElementById('admReg').textContent=filt.length;
+ document.getElementById('admPres').textContent=pres.length;
+ document.getElementById('admTotal').textContent=students.length;
+ document.getElementById('lecReg').textContent=filt.length;
+ document.getElementById('lecPres').textContent=pres.length;
+ document.getElementById('lecTotal').textContent=students.length;
+ document.getElementById('admClassInfo').textContent='Total: '+students.length+' | Present: '+attendance.length;
+ function row(s){
+  let is=attendance.find(a=>a.id==s.id);
+  let ph=s.photo?`<img src="${s.photo}" style="width:50px;height:50px;border-radius:50%;object-fit:cover;border:2px solid #0f4c2e">`:`<div style="width:50px;height:50px;border-radius:50%;background:#ccc;display:flex;align-items:center;justify-content:center">No</div>`;
+  return `<div class="student-row ${is?'present':''}">${ph}<div><b>${s.name}</b><br>ID: ${s.id} | Module: ${s.module}<br>${s.dept} Y${s.year} | ${is?'✅ Present':'❌ Absent'}</div></div>`;
+ }
+ let hAll='';students.forEach(s=>hAll+=row(s));
+ let hFilt='';filt.forEach(s=>hFilt+=row(s));
+ if(filt.length==0&&students.length>0)hFilt='<p style="color:red;font-weight:800">Showing ALL '+students.length+' students:</p>'+hAll;
+ document.getElementById('studentList').innerHTML=hFilt;
+ document.getElementById('lecStudentList').innerHTML=hFilt;
+ document.getElementById('admStudentList').innerHTML=hAll;
+ if(localStorage.getItem('imatt_this_phone_final'))document.getElementById('deviceInfo').textContent='📱 '+localStorage.getItem('imatt_this_phone_final');
+}
+function generateCode(r){
+ let c=Math.floor(1000+Math.random()*9000).toString();
+ currentCode=c;codeTime=Date.now();saveCode();
+ document.getElementById('admCodeShow').textContent=c;
+ document.getElementById('lecCodeShow').textContent=c;
+ alert('CODE for 200: '+c);updateTimer();
+}
+function updateTimer(){
+ if(!codeTime){document.getElementById('codeTimer').textContent='Waiting...';return;}
+ let d=15*60*1000-(Date.now()-codeTime);
+ if(d<=0){document.getElementById('codeTimer').textContent='❌ EXPIRED';document.getElementById('admCodeTimer').textContent='❌ EXPIRED';document.getElementById('lecCodeTimer').textContent='❌ EXPIRED';}
+ else{let m=Math.floor(d/60000),s=Math.floor((d%60000)/1000),t=`⏰ ${m}m ${s}s - Code: ${currentCode}`;document.getElementById('codeTimer').textContent=t;document.getElementById('admCodeTimer').textContent=t;document.getElementById('lecCodeTimer').textContent=t;document.getElementById('admCodeShow').textContent=currentCode;document.getElementById('lecCodeShow').textContent=currentCode;}
+}
+setInterval(loadOnline,5000);
+setInterval(updateTimer,1000);
+function markAttendance(){
+ let ci=document.getElementById('attCodeInput').value.trim();
+ if(!ci){alert('Enter code');return;}
+ if(currentCode&&ci!=currentCode){alert('Wrong! Correct: '+currentCode);return;}
+ if((Date.now()-codeTime)>15*60*1000&&codeTime!=0){alert('Expired');return;}
+ let lock=localStorage.getItem('imatt_this_phone_final');
+ if(!lock){alert('Add student first');return;}
+ let id=lock.split(' - ')[0];
+ if(attendance.find(a=>a.id==id)){alert('Already present');return;}
+ attendance.push({id,time:Date.now()});
+ saveAll();
+ alert('✅ Present! Total: '+attendance.length);
+ render();
+}
+function loginLecturer(){if(document.getElementById('lecPass').value=='imatt2026'){document.getElementById('lecControls').classList.remove('hidden');loadOnline();}else alert('Wrong');}
+function loginAdmin(){if(document.getElementById('admUser').value=='issa1727'){document.getElementById('admControls').classList.remove('hidden');loadOnline();}else alert('Wrong');}
+function downloadClassExcel(){
+ let csv='Name,ID,Phone,Dept,Year,Module,Status\n';
+ students.forEach(s=>{let pr=attendance.find(a=>a.id==s.id)?'Present':'Absent';csv+=`"${s.name}","${s.id}","${s.phone}","${s.dept}","${s.year}","${s.module}","${pr}"\n`;});
+ let b=new Blob([csv],{type:'text/csv'});
+ let a=document.createElement('a');
+ a.href=URL.createObjectURL(b);
+ a.download='IMATT_COLLEGE_ALL_'+students.length+'.csv';
+ a.click();
+}
+function clearAllData(){if(confirm('Clear ALL?')){students=[];attendance=[];currentCode='';codeTime=0;localStorage.clear();saveAll();saveCode();render();}}
+document.getElementById('stModule').addEventListener('input',e=>{moduleSel=e.target.value.trim()||'Operating system';updateCurrent();});
+loadOnline();updateCurrent();
+</script>
+</body>
+</html>
