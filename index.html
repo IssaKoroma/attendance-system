@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMATT COLLEGE ATTENDANCE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial}
+body{background:#0f4c2e;padding:8px}
+.card{background:#e8f5e9;border:3px solid #0f3d26;border-radius:18px;padding:12px;margin-bottom:10px;max-width:500px;margin:10px auto}
+.white{background:white;border-radius:16px;padding:14px}
+.inp{width:100%;padding:13px;border:1.5px solid #ccc;border-radius:12px;margin:6px 0;background:#f9fafb}
+.btn{padding:12px;border-radius:12px;font-weight:800;border:2px solid #0f3d26;cursor:pointer;width:100%;background:white}
+.btn.active{background:#0f3d26;color:white}
+.btn1{background:#0f3d26;color:white;width:100%;padding:14px;border-radius:12px;font-weight:900;border:none;margin:6px 0}
+.btn2{background:#16a34a;color:white;width:100%;padding:14px;border-radius:12px;font-weight:900;border:none;margin:6px 0}
+.box{background:#e8f5e9;border-radius:14px;display:flex;justify-content:space-around;text-align:center;padding:12px;margin:10px 0;border:1px solid #a7d7a9}
+.box b{font-size:20px}
+.head{background:#0f3d26;color:white;display:grid;grid-template-columns:0.5fr 1fr 1fr 1.2fr 0.6fr;gap:3px;padding:10px;border-radius:10px 10px 0 0;font-size:11px;font-weight:800;text-align:center}
+.row{background:white;border:1px solid #e5e7eb;border-top:none;padding:8px;display:grid;grid-template-columns:0.5fr 1fr 1fr 1.2fr 0.6fr;gap:3px;align-items:center;font-size:11px;text-align:center}
+.mod{background:#fef3c7;border:1px dashed #d97706;padding:4px;border-radius:6px;font-size:10px}
+.st{padding:5px 7px;border-radius:12px;color:white;font-weight:800;font-size:10px}
+.present{background:#16a34a}.absent{background:#dc2626}
+.del{color:red;font-weight:900;cursor:pointer}
+.hidden{display:none!important}
+.code{font-size:32px;font-weight:900;text-align:center;background:#0f3d26;color:white;padding:12px;border-radius:12px;letter-spacing:5px;margin:8px 0}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h2 style="text-align:center;color:#0f3d26">IMATT COLLEGE ATTENDANCE</h2>
+<p id="clock" style="text-align:center;font-size:12px"></p>
+<p id="curClass" style="text-align:center;font-weight:800;font-size:13px;margin:4px 0"></p>
+
+<!-- DEPARTMENTS -->
+<select class="inp" id="dept" onchange="setDept(this.value)">
+<option>Computer Science</option><option>HND</option><option>Procurement</option><option>Nursing</option>
+<option>Business Administration</option><option>Accounting & Finance</option><option>Public Admin</option>
+<option>Banking & Finance</option><option>HRM</option><option>Marketing</option>
+<option>Entrepreneurship</option><option>Electrical Engineering</option>
+</select>
+
+<!-- YEAR -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+<button class="btn" id="y1" onclick="setYear(1)">Y1</button>
+<button class="btn active" id="y2" onclick="setYear(2)">Y2</button>
+<button class="btn" id="y3" onclick="setYear(3)">Y3</button>
+<button class="btn" id="y4" onclick="setYear(4)">Y4</button>
+</div>
+
+<!-- STUDENT / LECTURER / ADMIN TABS -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+<button class="btn active" id="tS" onclick="tab('S')">STUDENT</button>
+<button class="btn" id="tL" onclick="tab('L')">LECTURER</button>
+</div>
+<button class="btn" id="tA" onclick="tab('A')" style="margin-top:6px">ADMIN</button>
+</div>
+
+<!-- STUDENT PANEL -->
+<div class="card white" id="pS">
+<input class="inp" id="sid" placeholder="Student ID e.g. 1727">
+<input class="inp" id="sname" placeholder="Full Name">
+<input class="inp" id="smod" placeholder="Module e.g. Operating System" value="operating system">
+<select class="inp" id="sstatus"><option>Present</option><option>Absent</option></select>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+<input class="inp" id="codeIn" placeholder="Enter Code">
+<button class="btn1" style="margin:6px 0" onclick="checkCode()">Check Code</button>
+</div>
+<p id="codeShowS" style="text-align:center;font-weight:800;color:#dc2626"></p>
+<button class="btn1" onclick="mark()">✔ Mark Attendance</button>
+<button class="btn2" onclick="exportEx()">📊 Export Excel</button>
+
+<div class="box"><div>Present<br><b id="pC">0</b></div><div>Absent<br><b id="aC">0</b></div><div>Total<br><b id="tC">0</b></div></div>
+
+<div class="head"><span>Year</span><span>Name/ID</span><span>Module</span><span>Status/Date/Time</span><span>Delete</span></div>
+<div id="listS"></div>
+<p style="text-align:center;font-size:11px;margin-top:8px"><span onclick="loadOnline(true)" style="color:#16a34a;text-decoration:underline">🔄 REFRESH - See All 200</span> | Total: <span id="tot">0</span></p>
+</div>
+
+<!-- LECTURER PANEL -->
+<div class="card white hidden" id="pL">
+<h3>Lecturer Panel</h3>
+<input class="inp" id="lecPass" type="password" placeholder="Password: imatt2026">
+<button class="btn1" onclick="loginL()">Login</button>
+<div id="lecBox" class="hidden">
+<div class="box"><div>Present<br><b id="pCL">0</b></div><div>Absent<br><b id="aCL">0</b></div><div>Total<br><b id="tCL">0</b></div>
+<button class="btn2" style="margin-left:10px" onclick="loadOnline(true)">🔄 REFRESH - See All Names, IDs, Module</button>
+</div>
+<button class="btn1" onclick="genCode()">Generate Code - For 200</button>
+<div class="code" id="codeL"></div><p id="timerL" style="text-align:center;font-weight:800;color:red"></p>
+<div class="head"><span>Year</span><span>Name/ID</span><span>Module</span><span>Status/Date/Time</span><span>Delete</span></div>
+<div id="listL"></div>
+<button class="btn2" onclick="exportEx()">📊 Export Excel</button>
+</div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="card white hidden" id="pA">
+<h3>Admin Panel - Issa 1727</h3>
+<input class="inp" id="admPass" placeholder="Enter: issa1727">
+<button class="btn1" onclick="loginA()">Login Admin</button>
+<div id="admBox" class="hidden">
+<div class="box"><div>Present<br><b id="pCA">0</b></div><div>Absent<br><b id="aCA">0</b></div><div>Total ALL<br><b id="tCA">0</b></div>
+<button class="btn2" style="margin-left:10px" onclick="loadOnline(true)">🔄 REFRESH - All 200</button>
+</div>
+<button class="btn1" onclick="genCode()">Generate Code (15 Min) - One Code for 200</button>
+<div class="code" id="codeA"></div><p id="timerA" style="text-align:center;font-weight:800;color:red"></p>
+<div class="head"><span>Year</span><span>Name/ID</span><span>Module</span><span>Status/Date/Time</span><span>Delete</span></div>
+<div id="listA" style="max-height:600px;overflow:auto"></div>
+<button class="btn2" onclick="exportEx()">📥 Download Excel - All Names, IDs, Modules</button>
+<button class="btn1" style="background:#dc2626;margin-top:6px" onclick="clearAll()">Clear ALL Data</button>
+</div>
+</div>
+
+<div style="text-align:center;color:white;font-weight:800;font-size:12px;margin:15px 0">This website built and Design by Issa Koroma year 2 student</div>
+
+<script>
+let dept='Computer Science',year=2,students=JSON.parse(localStorage.getItem('imatt_all')||'[]'),currentCode=localStorage.getItem('imatt_code')||'',codeTime=parseInt(localStorage.getItem('imatt_codeT')||'0');
+let kvdb="https://kvdb.io/8J7x9y2a3b4c5d6e/imatt_all_final_v4";
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleString()},1000);
+function setDept(d){dept=d;update()} function setYear(y){year=y;[1,2,3,4].forEach(i=>{document.getElementById('y'+i).classList.toggle('active',i==y)});update()}
+function update(){document.getElementById('curClass').textContent=dept+' Year '+year; render()}
+function tab(t){document.getElementById('pS').classList.add('hidden');document.getElementById('pL').classList.add('hidden');document.getElementById('pA').classList.add('hidden');
+document.getElementById('tS').classList.remove('active');document.getElementById('tL').classList.remove('active');document.getElementById('tA').classList.remove('active');
+if(t=='S'){document.getElementById('pS').classList.remove('hidden');document.getElementById('tS').classList.add('active')}
+if(t=='L'){document.getElementById('pL').classList.remove('hidden');document.getElementById('tL').classList.add('active')}
+if(t=='A'){document.getElementById('pA').classList.remove('hidden');document.getElementById('tA').classList.add('active')}}
+function save(){localStorage.setItem('imatt_all',JSON.stringify(students));fetch(kvdb,{method:'POST',body:JSON.stringify(students)}).catch(()=>{})}
+function saveCode(){localStorage.setItem('imatt_code',currentCode);localStorage.setItem('imatt_codeT',codeTime);fetch(kvdb+'_code',{method:'POST',body:JSON.stringify({code:currentCode,time:codeTime})}).catch(()=>{})}
+function loadOnline(show){
+ fetch(kvdb).then(r=>r.text()).then(t=>{try{let o=JSON.parse(t);if(Array.isArray(o)&&o.length>0){let m=[...students];o.forEach(x=>{if(!m.find(s=>s.id==x.id))m.push(x)});students=m;localStorage.setItem('imatt_all',JSON.stringify(students))}}catch(e){}
+  fetch(kvdb+'_code').then(r=>r.text()).then(c=>{try{let co=JSON.parse(c);if(co&&co.time>codeTime){currentCode=co.code;codeTime=co.time;localStorage.setItem('imatt_code',currentCode);localStorage.setItem('imatt_codeT',codeTime)}}catch(e){} render(); tick(); if(show) alert('✅ REFRESH Done: '+students.length+' students')});
+ });
+}
+function mark(){
+ let id=document.getElementById('sid').value.trim(),name=document.getElementById('sname').value.trim(),mod=document.getElementById('smod').value.trim()||'operating system',st=document.getElementById('sstatus').value;
+ if(!id||!name){alert('Enter ID and Name');return;}
+ if(currentCode&&document.getElementById('codeIn').value.trim()!=currentCode){alert('Wrong code! Code is: '+currentCode);return;}
+ if(codeTime&&Date.now()-codeTime>15*60*1000){alert('Code Expired - Ask Lecturer for new code');return;}
+ let now=new Date(); students.unshift({dept,year,id,name,module:mod,status:st,date:now.toLocaleDateString(),time:now.toLocaleTimeString()});
+ document.getElementById('sid').value='';document.getElementById('sname').value=''; save(); render();
+}
+function checkCode(){let c=document.getElementById('codeIn').value.trim(); if(c==currentCode&&currentCode!='') alert('✅ Code Correct! Now click Mark Attendance'); else alert('❌ Wrong or Expired - Correct: '+currentCode)}
+function render(){
+ let f=students.filter(s=>s.dept==dept&&s.year==year);
+ let p=f.filter(s=>s.status=='Present').length, a=f.filter(s=>s.status=='Absent').length;
+ ['pC','pCL','pCA'].forEach(id=>{let e=document.getElementById(id); if(e) e.textContent=p});
+ ['aC','aCL','aCA'].forEach(id=>{let e=document.getElementById(id); if(e) e.textContent=a});
+ ['tC','tCL'].forEach(id=>{let e=document.getElementById(id); if(e) e.textContent=f.length});
+ document.getElementById('tCA').textContent=students.length; document.getElementById('tot').textContent=students.length;
+ function row(s){let idx=students.indexOf(s); return `<div class="row"><span>Y${s.year}</span><span><b>${s.name}</b><br>${s.id}</span><span><span class="mod">${s.module}</span></span><span><span class="st ${s.status=='Present'?'present':'absent'}">${s.status}</span><br><span style="font-size:9px">${s.date}<br>${s.time}</span></span><span class="del" onclick="del(${idx})">❌</span></div>`}
+ let hf=''; f.forEach(s=>hf+=row(s)); let ha=''; students.forEach(s=>ha+=row(s));
+ document.getElementById('listS').innerHTML=hf||'<div style="text-align:center;padding:8px">No records</div>';
+ document.getElementById('listL').innerHTML=hf||'<div style="text-align:center;padding:8px">No records</div>';
+ document.getElementById('listA').innerHTML=ha||'<div style="text-align:center;padding:8px">No records</div>';
+}
+function del(i){if(confirm('Delete '+students[i].name+'?')){students.splice(i,1); save(); render();}}
+function genCode(){let c=Math.floor(1000+Math.random()*9000).toString(); currentCode=c; codeTime=Date.now(); saveCode(); document.getElementById('codeL').textContent=c; document.getElementById('codeA').textContent=c; alert('CODE for 200: '+c); tick();}
+function tick(){if(!codeTime) return; let d=15*60*1000-(Date.now()-codeTime); let txt=d<=0?'❌ EXPIRED':`⏰ ${Math.floor(d/60000)}m ${Math.floor((d%60000)/1000)}s - Code: ${currentCode}`; document.getElementById('codeShowS').textContent=txt; let l=document.getElementById('timerL'); if(l) l.textContent=txt; let a=document.getElementById('timerA'); if(a) a.textContent=txt; if(currentCode){document.getElementById('codeL').textContent=currentCode; document.getElementById('codeA').textContent=currentCode}}
+function loginL(){if(document.getElementById('lecPass').value=='imatt2026'){document.getElementById('lecBox').classList.remove('hidden'); loadOnline(true)} else alert('Wrong')}
+function loginA(){if(document.getElementById('admPass').value=='issa1727'){document.getElementById('admBox').classList.remove('hidden'); loadOnline(true)} else alert('Wrong')}
+function exportEx(){let csv='Year,Dept,Name,ID,Module,Status,Date,Time\n'; students.forEach(s=>{csv+=`${s.year},"${s.dept}","${s.name}",${s.id},"${s.module}",${s.status},${s.date},${s.time}\n`}); let b=new Blob([csv],{type:'text/csv'}); let a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='IMATT_All_'+students.length+'.csv'; a.click();}
+function clearAll(){if(confirm('Clear ALL?')){students=[];currentCode='';codeTime=0;localStorage.clear(); save(); saveCode(); render();}}
+setInterval(()=>loadOnline(false),10000); setInterval(tick,1000); loadOnline(false); update();
+</script>
+</body>
+</html>
