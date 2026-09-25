@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMATT COLLEGE</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#0a3d24;padding:12px}
+.card{background:#e6f4ea;border-radius:22px;padding:18px}
+.card h2{text-align:center;color:#0a3d24;font-size:30px;font-weight:900}
+.date{text-align:center;font-size:14px}
+.dept{text-align:center;font-weight:bold;font-size:17px;margin-bottom:10px}
+.select-box{width:100%;padding:15px;border-radius:15px;border:2px solid #e2a63d;background:white;font-size:15px;margin:8px 0;outline:none}
+.year-row{display:flex;gap:8px;margin:10px 0}
+.year-row button{flex:1;padding:14px;border-radius:15px;border:2px solid #0a3d24;background:white;font-weight:bold}
+.year-row button.active{background:#0a3d24;color:white}
+.role-row{display:flex;gap:8px;margin:8px 0}
+.role-row button{flex:1;padding:14px;border-radius:15px;border:2px solid #0a3d24;background:white;font-weight:bold}
+.role-row button.active{background:#0a3d24;color:white}
+.white-card{background:white;border-radius:22px;padding:18px;margin-top:14px}
+.input-white{width:100%;padding:14px;border-radius:15px;border:1.5px solid #ccc;margin:8px 0}
+.footer{text-align:center;color:white;padding:15px;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>IMATT COLLEGE</h2>
+<div class="date" id="dateTime">25/09/2026, 11:59:52 am</div>
+<div class="dept" id="labelDept">Computer Science Year 2</div>
+
+<input id="courseSelect" list="allCoursesList" class="select-box" value="Computer Science" placeholder="Type or select department" oninput="updateLabel()">
+<datalist id="allCoursesList">
+<option value="Bachelor of Laws (LLB)"><option value="BSc. in Information Systems"><option value="BSc. in Business Administration"><option value="BSc. in Applied Accounting"><option value="BSc. in Human Resource Management"><option value="BSc. in Procurement and Supply Chain Management"><option value="BSc. in Marketing"><option value="Diploma in Mass Communication"><option value="Higher Diploma in Nursing and Midwifery (SRN)"><option value="IELTS, French Language and Spanish Language"><option value="Diploma in Computer Science"><option value="Diploma in Business Administration"><option value="Diploma in Project Management"><option value="Diploma in Banking and Finance"><option value="Diploma in Human Resource Management"><option value="Diploma in Marketing"><option value="Diploma in Procurement and Supply Chain Management"><option value="Diploma in Applied Accounting">
+</datalist>
+
+<div class="year-row"><button id="y1" onclick="setYear('Y1')">Y1</button><button id="y2" class="active" onclick="setYear('Y2')">Y2</button><button id="y3" onclick="setYear('Y3')">Y3</button><button id="y4" onclick="setYear('Y4')">Y4</button></div>
+<div class="role-row"><button id="sBtn" class="active">STUDENT</button><button id="lBtn">LECTURER</button></div>
+<div class="role-row"><button id="aBtn" style="width:100%">ADMIN</button></div>
+</div>
+<div class="white-card">
+<input class="input-white" placeholder="Student ID e.g. 1727">
+<input class="input-white" placeholder="Full Name">
+</div>
+<div class="footer">Built and Design by Issa Koroma Year 2</div>
+<script>
+let curYear="Year 2";function setYear(y){curYear=y;document.querySelectorAll('.year-row button').forEach(b=>b.classList.remove('active'));document.getElementById(y.toLowerCase()).classList.add('active');updateLabel();}
+function updateLabel(){let c=document.getElementById('courseSelect').value||"Computer Science";document.getElementById('labelDept').innerText=c+" "+curYear;}
+</script>
+</body>
+</html>
