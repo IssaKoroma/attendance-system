@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IMATT COLLEGE Attendance</title>
+<style>
+  body{font-family:Arial;background:#0a3d2e;margin:0;padding:10px;color:#000}
+  .box{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px}
+  .btn{padding:10px 14px;border-radius:8px;border:none;font-weight:bold;cursor:pointer}
+  .y{display:inline-block;padding:8px 14px;border-radius:20px;border:1px solid #0a3d2e;margin:3px;cursor:pointer}
+  .y.active{background:#0a3d2e;color:#fff}
+  .main-btn{width:100%;background:#0a3d2e;color:#fff;padding:12px;border-radius:8px;margin:4px 0}
+</style>
+</head>
+<body>
+<h2 style="color:#fff;text-align:center">IMATT COLLEGE<br><small id="dateNow"></small><br><small id="deptYearLabel">Computer Science Year 1</small></h2>
+
+<div class="box">
+<select id="dept" onchange="changeDept()">
+ <option>Computer Science</option>
+ <option>Business Admin</option>
+ <option>Banking & Finance</option>
+</select>
+<div style="margin-top:8px">
+ <span class="y active" id="y1" onclick="selectYear('Y1')">Y1</span>
+ <span class="y" id="y2" onclick="selectYear('Y2')">Y2</span>
+ <span class="y" id="y3" onclick="selectYear('Y3')">Y3</span>
+ <span class="y" id="y4" onclick="selectYear('Y4')">Y4</span>
+</div>
+<div style="margin-top:8px">
+ <button class="btn" onclick="setRole('STUDENT')" id="bS">STUDENT</button>
+ <button class="btn" onclick="setRole('LECTURER')" id="bL">LECTURER</button>
+ <button class="btn" onclick="setRole('ADMIN')" id="bA">ADMIN</button>
+</div>
+</div>
+
+<div id="content"></div>
+
+<script>
+let currentYear = 'Y1';
+let currentDept = 'Computer Science';
+let currentRole = 'STUDENT';
+
+// DATE
+document.getElementById('dateNow').innerText = new Date().toLocaleString();
+
+function getLockedYear(){ return localStorage.getItem('imatt_locked_year'); }
+function getLockedRole(){ return localStorage.getItem('imatt_locked_role'); }
+
+function selectYear(y){
+  const lockedYear = getLockedYear();
+  const lockedRole = getLockedRole();
+  // Only block if this phone is locked as STUDENT and trying different year
+  if(lockedYear && lockedRole==='student' && lockedYear!==y){
+    alert(`You are Year ${lockedYear.replace('Y','')} student. You cannot get access on Year ${y.replace('Y','')}. System locked to Year ${lockedYear.replace('Y','')}.`);
+    return;
+  }
+  currentYear = y;
+  document.querySelectorAll('.y').forEach(e=>e.classList.remove('active'));
+  document.getElementById(y.toLowerCase()).classList.add('active');
+  document.getElementById('deptYearLabel').innerText = `${currentDept} ${currentYear.replace('Y','Year ')}`;
+  render();
+}
+
+function changeDept(){
+  const newDept = document.getElementById('dept').value;
+  const lockedYear = getLockedYear();
+  const lockedDept = localStorage.getItem('imatt_locked_dept');
+  const lockedRole = getLockedRole();
+  if(lockedYear && lockedRole==='student' && lockedDept && lockedDept!==newDept){
+    alert(`You registered under ${lockedDept} ${lockedYear}. You cannot change department. One phone One student.`);
+    document.getElementById('dept').value = lockedDept;
+    return;
+  }
+  currentDept = newDept;
+  document.getElementById('deptYearLabel').innerText = `${currentDept} ${currentYear.replace('Y','Year ')}`;
+  render();
+}
+
+function setRole(r){ currentRole=r; render(); }
+
+function storageKey(){ return `att_${currentDept}_${currentYear}`; }
+
+function getRecords(){
+  return JSON.parse(localStorage.getItem(storageKey()) || '[]');
+}
+function saveRecords(rec){ localStorage.setItem(storageKey(), JSON.stringify(rec)); }
+
+function render(){
+  // ROLE UI
+  const recs = getRecords();
+  let html = '';
+  
+  if(currentRole==='STUDENT'){
+    const locked = localStorage.getItem('imatt_student_data');
+    if(locked){
+      const d = JSON.parse(locked);
+      // Show locked message if this is same year
+      if(d.year===currentYear && d.dept===currentDept){
+        html += `<div class="box" style="background:#fff3cd">Locked: ${d.name} (${d.id}) - One phone One student<br>Year: ${d.year} Dept: ${d.dept}</div>`;
+      }
+    }
+    html += `
+      <div class="box">
+      <input id="sName" placeholder="Jusu koroma"><br><br>
+      <input id="sId" placeholder="1243"><br><br>
+      <select id="module"><option>Operating System</option><option>Networking</option></select><br><br>
+      <input id="codeInput" placeholder="Enter Code from Lec"><button onclick="checkCode()">Check Code</button>
+      <p id="codeMsg"></p>
+      <button class="main-btn" onclick="markAttendance()">Mark Attendance</button>
+      </div>`;
+  } else {
+    // LECTURER / ADMIN - only show records of THIS year + THIS dept
+    html += `
+    <div class="box">
+    <h3>${currentRole} Panel - ${currentDept} ${currentYear}</h3>
+    <button class="main-btn" onclick="generateCode()">Generate Code - Only ${currentRole}</button>
+    <h1 id="codeDisplay" style="text-align:center">${localStorage.getItem('lec_code_'+storageKey())||'----'}</h1>
+    <p id="expMsg"></p>
+    <div>Present: ${recs.filter(r=>r.status==='Present').length} | Total: ${recs.length}</div>
+    <table border=1 width=100%><tr><th>Year</th><th>Name/ID</th><th>Module</th><th>Status</th></tr>
+    ${recs.map(r=>`<tr><td>${r.year}</td><td>${r.name} ${r.id}</td><td>${r.module}</td><td>${r.status}</td></tr>`).join('')}
+    </table>
+    </div>`;
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+function generateCode(){
+  const code = Math.floor(1000+Math.random()*9000);
+  localStorage.setItem('lec_code_'+storageKey(), code);
+  localStorage.setItem('lec_code_time_'+storageKey(), Date.now());
+  document.getElementById('codeDisplay').innerText = code;
+}
+
+function checkCode(){
+  const c = document.getElementById('codeInput').value;
+  const real = localStorage.getItem('lec_code_'+storageKey());
+  if(c==real){ document.getElementById('codeMsg').innerText='Code OK - You can mark now'; }
+  else { document.getElementById('codeMsg').innerText='X EXPIRED - Lecturer/Admin must generate new code'; }
+}
+
+function markAttendance(){
+  const lockedYear = getLockedYear();
+  const lockedRole = getLockedRole();
+  if(lockedYear && lockedYear!==currentYear && lockedRole==='student'){
+    alert(`You are Year ${lockedYear.replace('Y','')} student. You cannot mark attendance for Year ${currentYear.replace('Y','')}.`);
+    return;
+  }
+  const name = document.getElementById('sName').value;
+  const id = document.getElementById('sId').value;
+  const module = document.getElementById('module').value;
+  if(!name||!id){ alert('Enter name and ID'); return; }
+
+  // Lock phone to this year & dept
+  if(!lockedYear){
+    localStorage.setItem('imatt_locked_year', currentYear);
+    localStorage.setItem('imatt_locked_dept', currentDept);
+    localStorage.setItem('imatt_locked_role', 'student');
+    localStorage.setItem('imatt_student_data', JSON.stringify({name,id,year:currentYear,dept:currentDept}));
+  }
+
+  let recs = getRecords();
+  // prevent duplicate same ID in same year
+  if(recs.find(r=>r.id===id)){ alert('Already marked for this Year'); return; }
+
+  recs.push({year:currentYear, dept:currentDept, name,id,module,status:'Present', time:new Date().toLocaleString()});
+  saveRecords(recs);
+  alert('Attendance Marked for '+currentYear);
+  render();
+}
+
+render();
+</script>
+<div style="text-align:center;color:#fff">Built and Design Issa Koroma Year 2</div>
+</body>
+</html>
