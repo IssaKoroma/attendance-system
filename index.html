@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IMATT COLLEGE</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+body{margin:0;background:#0a3d2e;font-family:Arial;padding:8px}
+.box{background:#fff;border-radius:14px;padding:10px;margin-bottom:10px}
+.y{padding:8px 16px;border-radius:20px;border:1.5px solid #0a3d2e;margin:3px;display:inline-block;cursor:pointer;background:#fff;font-weight:bold}
+.y.active{background:#0a3d2e;color:#fff}
+.role{padding:10px;border-radius:8px;border:1px solid #000;margin:3px;display:inline-block;cursor:pointer;background:#fff;font-weight:bold}
+.role.active{background:#000;color:#fff}
+.main{background:#0a3d2e;color:#fff;padding:12px;width:100%;border-radius:10px;border:none;font-weight:bold;cursor:pointer;margin:5px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#0a3d2e;color:#fff;padding:8px 3px;border:1px solid #000}
+td{padding:8px 3px;border:1px solid #000;text-align:center}
+.presentBtn{background:#d1fae5;color:#065f46;border:none;padding:7px 14px;border-radius:20px;font-weight:bold;cursor:pointer}
+.absentBtn{background:#fee2e2;color:#991b1b;border:none;padding:7px 14px;border-radius:20px;font-weight:bold;cursor:pointer}
+</style>
+</head>
+<body>
+<center style="color:#fff"><h2 style="margin:0">IMATT COLLEGE</h2><div id="dt"></div><div id="lbl" style="font-weight:bold;margin-top:4px">Computer Science Year 1</div></center>
+
+<div class="box">
+<select id="dept" onchange="changeDept()" style="width:100%;padding:10px;border-radius:10px"><option>Computer Science</option><option>Business Admin</option><option>Banking & Finance</option><option>Accountancy</option></select>
+<div style="margin-top:8px"><span class="y active" id="Y1" onclick="setYear('Y1')">Y1</span><span class="y" id="Y2" onclick="setYear('Y2')">Y2</span><span class="y" id="Y3" onclick="setYear('Y3')">Y3</span><span class="y" id="Y4" onclick="setYear('Y4')">Y4</span></div>
+<div style="margin-top:8px"><span class="role active" id="rL" onclick="setR('LECTURER')">LECTURER</span><span class="role" id="rC" onclick="setR('CLASS REP')">CLASS REP</span><span class="role" id="rA" onclick="setR('ADMIN')">ADMIN</span></div>
+</div>
+
+<div class="box" id="login"></div>
+<div id="main"></div>
+
+<div style="color:#fff;text-align:center;font-size:11px;padding:8px">Built and Design Issa Koroma Year 2<br>Only Lecturer/Class Rep/Admin</div>
+
+<script>
+let curY='Y1', curD='Computer Science', curR='LECTURER', logged=false;
+const PASS={LECTURER:'imatt2026','CLASS REP':'rep2026',ADMIN:'issa1727'};
+function k(){return `final_${curD}_${curY}`;}
+function get(){return JSON.parse(localStorage.getItem(k())||'[]');}
+function save(a){localStorage.setItem(k(), JSON.stringify(a));}
+setInterval(()=>document.getElementById('dt').innerText=new Date().toLocaleString(),1000);
+
+function setYear(y){
+  curY=y; document.querySelectorAll('.y').forEach(b=>b.classList.remove('active')); document.getElementById(y).classList.add('active');
+  document.getElementById('lbl').innerText=`${curD} Year ${y.replace('Y','')}`; if(logged) render();
+}
+function changeDept(){curD=document.getElementById('dept').value; document.getElementById('lbl').innerText=`${curD} Year ${curY.replace('Y','')}`; if(logged) render();}
+function setR(r){curR=r; document.querySelectorAll('.role').forEach(b=>b.classList.remove('active')); document.getElementById(r==='LECTURER'?'rL':r==='CLASS REP'?'rC':'rA').classList.add('active'); logged=false; showLogin();}
+function showLogin(){
+  document.getElementById('login').innerHTML=`<b>${curR} Login - ${curD} ${curY}</b><br><small>This website is for only Lecturer, Class Rep and Admin</small><br><br><input type="password" id="pw" placeholder="Enter ${curR} Password" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc"><br><br><button class="main" onclick="login()">Login ${curR}</button>`;
+  document.getElementById('main').innerHTML='';
+}
+function login(){
+  if(document.getElementById('pw').value===PASS[curR]){logged=true; document.getElementById('login').innerHTML=`<div style="background:#d1fae5;padding:8px;border-radius:10px">✅ Logged in as <b>${curR}</b> - ${curD} ${curY} <button onclick="showLogin();logged=false" style="float:right">Logout</button></div>`; render();}
+  else alert('Wrong password');
+}
+
+function render(){
+  let arr=get();
+  let present=arr.filter(s=>s.status==='Present').length;
+  let html=`<div class="box">
+  <b>${curR} Panel - ${curD} ${curY}</b><br>Present: ${present} | Total: ${arr.length}
+  <div style="margin-top:8px;border:2px dashed #0a3d2e;padding:8px;border-radius:10px">
+  <b>Add Student - Name/ID Permanent Cannot Delete</b><br>
+  <input id="name" placeholder="Name e.g Jusu Koroma" style="width:100%;padding:10px;margin:4px 0;border-radius:8px;border:1px solid #ccc">
+  <input id="id" placeholder="ID e.g 1243" style="width:100%;padding:10px;margin:4px 0;border-radius:8px;border:1px solid #ccc">
+  <select id="mod" style="width:100%;padding:10px;border-radius:8px"><option>Operating System</option><option>Networking</option><option>Database</option><option>Programming</option></select>
+  <button class="main" onclick="add()">+ Add Student to ${curD} ${curY}</button>
+  </div>
+  <button class="main" style="background:#0a6b4a" onclick="downloadExcel()">📥 Download Excel (Data remains)</button>
+  <button class="main" style="background:#1e40af" onclick="downloadPhone()">📱 Download Phone File (Data remains)</button>
+  </div>
+
+  <div class="box" style="overflow:auto">
+  <table>
+  <tr><th>Year</th><th>Name/ID</th><th>Module (click to change)</th><th>Status (click Present/Absent)</th><th>Date (changes when click Present/Absent)</th></tr>
+  ${arr.map((s,i)=>`<tr>
+  <td>${s.year}</td>
+  <td><b>${s.name}</b><br>${s.id}</td>
+  <td><select onchange="chgMod(${i},this.value)" style="padding:6px;border-radius:6px"><option ${s.module==='Operating System'?'selected':''}>Operating System</option><option ${s.module==='Networking'?'selected':''}>Networking</option><option ${s.module==='Database'?'selected':''}>Database</option><option ${s.module==='Programming'?'selected':''}>Programming</option></select></td>
+  <td><button class="${s.status==='Present'?'presentBtn':'absentBtn'}" onclick="toggle(${i})">${s.status}</button></td>
+  <td>${s.date}</td>
+  </tr>`).join('')}
+  </table>
+  ${arr.length===0?'<p style="text-align:center">No students in '+curD+' '+curY+' yet</p>':''}
+  <p style="font-size:11px;color:#555">Note: Name, ID, Module, Status, Date can never be deleted. Only Present/Absent and Module can be changed by Lecturer/Class Rep/Admin after input.</p>
+  </div>`;
+  document.getElementById('main').innerHTML=html;
+}
+
+function add(){
+  let n=document.getElementById('name').value.trim(), id=document.getElementById('id').value.trim(), m=document.getElementById('mod').value;
+  if(!n||!id){alert('Enter name and ID'); return;}
+  let arr=get();
+  if(arr.find(s=>s.id===id)){alert('ID '+id+' already exists - One ID one student'); return;}
+  arr.push({year:curY, dept:curD, name:n, id:id, module:m, status:'Absent', date:new Date().toLocaleDateString()+' '+new Date().toLocaleTimeString()});
+  save(arr); render();
+}
+function toggle(i){
+  let arr=get();
+  arr[i].status = arr[i].status==='Present'?'Absent':'Present';
+  arr[i].date = new Date().toLocaleDateString()+' '+new Date().toLocaleTimeString() + ' - Marked '+arr[i].status+' by '+curR;
+  save(arr); render();
+}
+function chgMod(i,v){
+  let arr=get(); arr[i].module=v; arr[i].date = new Date().toLocaleDateString()+' '+new Date().toLocaleTimeString() + ' - Module changed to '+v+' by '+curR; save(arr); render();
+}
+function downloadExcel(){
+  let arr=get(); if(!arr.length){alert('No data'); return;}
+  let ws=XLSX.utils.json_to_sheet(arr); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,`${curD}_${curY}`); XLSX.writeFile(wb,`${curD}_${curY}_Attendance.xlsx`);
+}
+function downloadPhone(){
+  let arr=get(); let blob=new Blob([JSON.stringify(arr,null,2)],{type:'application/json'}); let url=URL.createObjectURL(blob); let a=document.createElement('a'); a.href=url; a.download=`${curD}_${curY}_backup.json`; a.click();
+}
+showLogin();
+</script>
+</body>
+</html>
